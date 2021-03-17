@@ -79,15 +79,19 @@ void APlayerPawn::Tick(float DeltaTime)
 	}
 
 	//rotating the player
-	if (!FVector::Coincident(ShadowSneak ? FloorNormal : FVector::UpVector, GetActorUpVector())) {
+	FVector DesiredUp = ShadowSneak ? FloorNormal : FVector::UpVector;
+	if (!FVector::Coincident(DesiredUp, GetActorUpVector())) {
+		
 		//store cam forward before rotating.
 		FVector camForward = MyCamera->GetForwardVector();
 
-		FVector DesiredUp = ShadowSneak ? FloorNormal : FVector::UpVector;
 		//CP stands for cross product here.
 		FVector CP = FVector::CrossProduct(GetActorUpVector(), DesiredUp);
+		CP.Normalize();
+
 		//find new up vector, avoiding overrotation.
 		FVector newUp = GetActorUpVector().RotateAngleAxis(FMath::Clamp(MaxRotateSpeed * DeltaTime, 0.0f, GetActorUpVector().RadiansToVector(DesiredUp) * 180 / PI), CP);
+		//FVector newUp = GetActorUpVector().RotateAngleAxis(MaxRotateSpeed * DeltaTime, CP);
 		FVector newForward = FVector::CrossProduct(RootComponent->GetRightVector(), newUp);
 		FVector newRight = FVector::CrossProduct(newUp, newForward);
 		//construct a quat to rotate player to.
@@ -99,18 +103,20 @@ void APlayerPawn::Tick(float DeltaTime)
 		//desired look direction
 		
 		//up direction. keep in mind that looking side to side rotates the entire player, so cam forward and actor right will always be perpendicular.
-		newUp = FVector::CrossProduct(camForward, GetActorRightVector());
-		q = FTransform(camForward, GetActorRightVector(), newUp, MyCamera->GetComponentLocation()).GetRotation();
-		//see how much influence we want to give the rotation of the actor on the direction the camera is looking. This depends on the angle between the look direction and CP.
-		//if player is looking almost all the way up or almost all the way down, it has full influence
-		float camLerp = FMath::Cos(CP.RadiansToVector(camForward - DesiredUp * camForward.DistanceInDirection(DesiredUp)));
-		camLerp = CamLerpMult;
-		GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Yellow, "raidans to vector: " + FString::SanitizeFloat(FMath::Abs(camForward.RadiansToVector(GetActorUpVector()) - PI)));
-		if (FMath::Abs(camForward.RadiansToVector(GetActorUpVector()) - PI) <= angle || camForward.RadiansToVector(GetActorUpVector()) <= angle) {
-			camLerp = 0;
-			GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Yellow, "fuck");
+		if (!FVector::Coincident(MyCamera->GetForwardVector(), camForward)) {
+			newUp = FVector::CrossProduct(camForward, GetActorRightVector());
+			q = FTransform(camForward, GetActorRightVector(), newUp, MyCamera->GetComponentLocation()).GetRotation();
+			//see how much influence we want to give the rotation of the actor on the direction the camera is looking. This depends on the angle between the look direction and CP.
+			//if player is looking almost all the way up or almost all the way down, it has full influence
+			float camLerp = FMath::Cos(CP.RadiansToVector(camForward - DesiredUp * camForward.DistanceInDirection(DesiredUp)));
+			camLerp = CamSneakInfluence;
+			//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Yellow, "raidans to vector: " + FString::SanitizeFloat(FMath::Abs(camForward.RadiansToVector(GetActorUpVector()) - PI)));
+			if (camForward.DistanceInDirection(GetActorForwardVector()) <= 0){
+				camLerp = 0;
+				GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Yellow, "fuck");
+			}
+			MyCamera->SetWorldRotation(FQuat::Slerp(q, MyCamera->GetComponentQuat(), FMath::Abs(camLerp)));
 		}
-		MyCamera->SetWorldRotation(FQuat::Slerp(MyCamera->GetComponentQuat(), q, FMath::Abs(camLerp)));
 	}
 
 	//Setting movement speed
@@ -128,9 +134,10 @@ void APlayerPawn::Tick(float DeltaTime)
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(addHeight));
 	
 	//interpolate capsule dimensions;
+	MovementComp->HeightAdjustVel = FVector::ZeroVector;
 	if (Capsule != nullptr && currentHeight != endHeight) {
 		GetAddHeight();
-		MovementComp->AddInputVector(RootComponent->GetUpVector() * addHeight);
+		MovementComp->HeightAdjustVel += (RootComponent->GetUpVector() * addHeight * (addHeight > 0 ? 1 : 1.1));
 		currentHeight += addHeight * DeltaTime;
 		if (currentHeight == endHeight || addHeight > 0 ? currentHeight + addHeight * DeltaTime > endHeight : currentHeight + addHeight * DeltaTime < endHeight) {
 			//MovementComp->AddInputVector(RootComponent->GetUpVector() * (endHeight - currentHeight));
@@ -350,7 +357,7 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 				}
 				FloorNormal = ThisNorm;
 				FloorNormal.Normalize();
-				MovementComp->downVel = -FloorNormal * 30;
+				MovementComp->DownVel = -FloorNormal * 30;
 			}
 		}	
 	}

@@ -36,17 +36,17 @@ public:
 	class UCameraComponent* MyCamera;
 
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Capsule")
 		float sneakHeight = 16;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Capsule")
 		float crouchHeight = 50;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Capsule")
 		float normalHeight = 100;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Capsule")
 		float HeightInterpTime = 0.3;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
 		float SneakThreshold;
-	UPROPERTY(EditAnywhere, meta = (ClampMin = "1", ClampMax = "100"))
+	UPROPERTY(EditAnywhere, meta = (ClampMin = "1", ClampMax = "100"), Category = "Capsule")
 		float NormalRadius = 50;
 	UPROPERTY(EditAnywhere, Category = "Camera|Camera Motion|Shake")
 		class UCurveVector* WalkCurve;
@@ -54,21 +54,21 @@ public:
 		float WalkCurveStartLoop = 0;
 	UPROPERTY(EditAnywhere, Category = "Camera|Camera Motion|Shake")
 		float WalkCurveEndLoop = 3;
-
+	/*How much of an incfluence should tilting in shadow sneak have on look direction?*/
 	UPROPERTY(EditAnywhere, Category = "Camera|Camera Motion|Shadow Sneak", meta = (ClampMin = "0", ClampMax = "1"))
-		float CamLerpMult = 1;
+		float CamSneakInfluence = 0;
 	/*Adds some buffer to dropping off of a wall if not grounded in shadow mode*/
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
 		int ShadowDropTime = 3;
 
 	bool CheckGrounded();
 
-	bool ShadowSneak;
-	int Grounded;
-	bool bCrouch;
-	bool bSprint;
-	bool bBufferSprint;
-	bool bBufferEndSprint;
+	bool ShadowSneak = false;
+	int Grounded = 0;
+	bool bCrouch = false;
+	bool bSprint = false;
+	bool bBufferSprint = false;
+	bool bBufferEndSprint = false;
 	struct Visibility {
 		float Vis;
 		float GroundVis;
@@ -85,7 +85,8 @@ public:
 
 	FVector FloorNormal;
 	FVector OldNormal;
-	UPROPERTY(EditAnywhere)
+	/*max degrees per second when rotating player to desired up direction*/
+	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
 		float MaxRotateSpeed;
 	FVector Under;
 	UPROPERTY(EditAnywhere)

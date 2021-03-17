@@ -10,9 +10,7 @@ void UCustomMovement::BeginPlay() {
 	Pawn = Cast<APlayerPawn>(PawnOwner);
 	Capsule = Cast<UCapsuleComponent>(UpdatedComponent);
 	StartJump = false;
-	//i've written this out this way to make it more readable. multiplying both jump height and gravity by 100 because m to cm, 4 because of the way quadratic functions are
-	JumpSpeed = FMath::Sqrt(100 * JumpHeight * 4 * 100 * Gravity);
-	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Yellow, "Jump Speed: " + FString::SanitizeFloat(JumpSpeed));
+	JumpSpeed = JumpHeight / (4 * Gravity) * 100 / 60;
 }
 
 void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -68,7 +66,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Emerald, FString::FromInt(GroundNum));
 	//accelerate if it's not actually touching the ground. linecasts don't count.
 	if (GroundNum == 0) {
-		DownVel += (MoveType == MovementType::Sneak ? Capsule->GetUpVector() : FVector::UpVector) * -Gravity * DeltaTime * 200;
+		DownVel += (MoveType == MovementType::Sneak ? Capsule->GetUpVector() : FVector::UpVector) * -Gravity * FMath::Pow(DeltaTime, 2) * 100;
 	}
 }
 void UCustomMovement::SetSpeed()

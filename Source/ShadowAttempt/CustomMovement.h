@@ -19,27 +19,30 @@ public:
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	UPROPERTY(EditAnywhere)
 		float StepHeight;
+	/*This handles both shadow sneak and max walkable angle Player won't be able to walk up nor sneak up angles higher than this.*/
 	UPROPERTY(EditAnywhere)
 		float MaxAngle = 50;
 	bool Running;
-	FVector downVel = FVector::ZeroVector;
+	FVector DownVel = FVector::ZeroVector;
 	FVector JumpVel = FVector::ZeroVector;
-	FVector LateralVel;
+	FVector LateralVel = FVector::ZeroVector;
+	FVector HeightAdjustVel = FVector::ZeroVector;
 	FVector CurrentLatVel;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Movement Speed")
 		float SneakSpeed = 200;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Movement Speed")
 		float CrouchSpeed = 300;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Movement Speed")
 		float NormalSpeed = 300;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Movement Speed")
 		float SprintSpeed = 600;
 	float MovementSpeed;
-	UPROPERTY(EditAnywhere)
-		float JumpSpeed = 800;
+	UPROPERTY(EditAnywhere, meta = (ClampMin = "0"));
+		float JumpHeight;
 	UPROPERTY(EditAnywhere)
 		float Gravity = 9.81;
 	bool Shadow;
+	float JumpSpeed = 800;
 	enum MovementType{Walk, Sprint, Crouch, Sneak};
 	MovementType MoveType;
 	void SetSpeed();
