@@ -86,7 +86,6 @@ public:
 
 	FVector FloorNormal;
 	FVector OldNormal;
-	FVector DesiredUp;
 	/*max degrees per second when rotating player to desired up direction*/
 	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
 		float MaxRotateSpeed;

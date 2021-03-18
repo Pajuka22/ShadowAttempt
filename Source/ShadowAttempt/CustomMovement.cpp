@@ -55,6 +55,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	FVector DesiredMovementThisFrame = (LateralVel + JumpVel + DownVel + HeightAdjustVel) * DeltaTime;
 
 	FHitResult outHit;
+	
 	if (!DesiredMovementThisFrame.IsNearlyZero())
 	{
 		SafeMoveUpdatedComponent(DesiredMovementThisFrame, UpdatedComponent->GetComponentRotation(), true, outHit);
@@ -65,10 +66,26 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 			SlideAlongSurface(DesiredMovementThisFrame, 1.f - outHit.Time, outHit.Normal, outHit);
 		}
 	}
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Emerald, FString::FromInt(GroundNum));
+	//comment this if statement out if it doesn't work. chances are it won't, and it's fine as is.
+	/*if (MoveType == MovementType::Sneak) {
+		
+		FCollisionQueryParams params;
+		params.AddIgnoredActor(UpdatedComponent->GetOwner());
+		FVector Start = UpdatedComponent->GetComponentLocation() + LateralVel * (Capsule->GetScaledCapsuleRadius() / LateralVel.Size());
+		FVector End = Start + LateralVel * DeltaTime;
+		GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_Visibility, params);
+		if (outHit.bBlockingHit) {
+			if (UpdatedComponent->GetUpVector().RadiansToVector(outHit.ImpactNormal) <= ShadowMaxAngle * PI / 180) {
+				Pawn->FloorNormal = outHit.ImpactNormal;
+				Pawn->bMovementOverrideFloorNormal = true;
+			}
+			GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Emerald, "i feel like i've come up against a wall and i can't see behind it.");
+			DrawDebugLine(GetWorld(), Start, End, FColor::Purple);
+		}
+	}*/
 	//accelerate if it's not actually touching the ground. linecasts don't count.
 	if (GroundNum == 0) {
-		DownVel += (MoveType == MovementType::Sneak ? Capsule->GetUpVector() : FVector::UpVector) * -Gravity * DeltaTime * 200;
+		DownVel += (MoveType == MovementType::Sneak ? Pawn->FloorNormal : FVector::UpVector) * -Gravity * DeltaTime * 200;
 	}
 }
 void UCustomMovement::SetSpeed()
@@ -94,7 +111,7 @@ void UCustomMovement::SetSpeed()
 void UCustomMovement::Jump() {
 	if (CanJump()) {
 		GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Purple, "YEET");
-		JumpVel += UpdatedComponent->GetUpVector() * JumpSpeed;
+		JumpVel += UpdatedComponent->GetUpVector() * (Pawn->ShadowSneak ? 200 * FMath::Sqrt(Gravity * (JumpHeight + (Pawn->NormalHeight - Pawn->SneakHeight)/100)) : JumpSpeed);
 		StartJump = true;
 	}
 }
@@ -158,7 +175,6 @@ bool UCustomMovement::CheckStepDown(FVector movement) {
 		End = Start - Capsule->GetUpVector() * StepHeight;
 		//DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 1, 0, 1);
 		IsHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
-		GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::White, Hit.bBlockingHit ? "Stepping Down." : "Not stepping Down");
 		return Hit.bBlockingHit && !StartJump;
 	}
 	return false;

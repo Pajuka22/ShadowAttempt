@@ -80,18 +80,18 @@ void APlayerPawn::Tick(float DeltaTime)
 	}
 
 	//rotating the player
-	FVector tmpDesiredUp = ShadowSneak ? DesiredUp : FVector::UpVector;
-	if (!FVector::Coincident(tmpDesiredUp, GetActorUpVector())) {
+	FVector DesiredUp = ShadowSneak ? FloorNormal : FVector::UpVector;
+	if (!FVector::Coincident(DesiredUp, GetActorUpVector())) {
 
 		//store cam forward before rotating.
 		FVector camForward = MyCamera->GetForwardVector();
 
 		//CP stands for cross product here.
-		FVector CP = FVector::CrossProduct(GetActorUpVector(), tmpDesiredUp);
+		FVector CP = FVector::CrossProduct(GetActorUpVector(), DesiredUp);
 		CP.Normalize();
 
 		//find new up vector, avoiding overrotation.
-		FVector newUp = GetActorUpVector().RotateAngleAxis(FMath::Clamp(MaxRotateSpeed * DeltaTime, 0.0f, GetActorUpVector().RadiansToVector(tmpDesiredUp) * 180 / PI), CP);
+		FVector newUp = GetActorUpVector().RotateAngleAxis(FMath::Clamp(MaxRotateSpeed * DeltaTime, 0.0f, GetActorUpVector().RadiansToVector(DesiredUp) * 180 / PI), CP);
 		//FVector newUp = GetActorUpVector().RotateAngleAxis(MaxRotateSpeed * DeltaTime, CP);
 		FVector newForward = FVector::CrossProduct(RootComponent->GetRightVector(), newUp);
 		FVector newRight = FVector::CrossProduct(newUp, newForward);
@@ -109,7 +109,7 @@ void APlayerPawn::Tick(float DeltaTime)
 			q = FTransform(camForward, GetActorRightVector(), newUp, MyCamera->GetComponentLocation()).GetRotation();
 			//see how much influence we want to give the rotation of the actor on the direction the camera is looking. This depends on the angle between the look direction and CP.
 			//if player is looking almost all the way up or almost all the way down, it has full influence
-			float camLerp = FMath::Cos(CP.RadiansToVector(camForward - tmpDesiredUp * camForward.DistanceInDirection(tmpDesiredUp)));
+			float camLerp = FMath::Cos(CP.RadiansToVector(camForward - DesiredUp * camForward.DistanceInDirection(DesiredUp)));
 			camLerp = CamSneakInfluence;
 			//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Yellow, "raidans to vector: " + FString::SanitizeFloat(FMath::Abs(camForward.RadiansToVector(GetActorUpVector()) - PI)));
 			if (camForward.DistanceInDirection(GetActorForwardVector()) <= 0) {
@@ -361,11 +361,11 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 			//ThisNorm.RadiansToVector(GetActorUpVector()) <= MovementComp->MaxAngle * PI / 180 && 
 			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Orange, FString::SanitizeFloat((thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel)));
 			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, FString::SanitizeFloat((Under - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel)));
-			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Cyan, FString::SanitizeFloat(angle * 180 / PI) + " vs " + FString::SanitizeFloat((ShadowSneak ? MovementComp->ShadowMaxAngle + 1: MovementComp->MaxAngle + 1)));
+			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Cyan, FString::SanitizeFloat(angle * 180 / PI) + " vs " + FString::SanitizeFloat((ShadowSneak ? MovementComp->ShadowMaxAngle : MovementComp->MaxAngle + 1)));
 			//basically if that impact point is closer to the direction the player's moving in and the angle's valid
 			if ((angle < FloorAngle || 
 				(thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel) >= (Under - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel))
-				&& angle <= (ShadowSneak ? MovementComp->ShadowMaxAngle + 1 : MovementComp->MaxAngle + 1) * PI/180) {
+				&& angle <= (ShadowSneak ? MovementComp->ShadowMaxAngle : MovementComp->MaxAngle + 1) * PI/180) {
 				//DrawDebugLine(GetWorld(), Under, Under + 100 * FloorNormal, FColor::Green, false, 1, 0, 1);
 				
 				MovementComp->GroundNum = Grounded;
@@ -375,13 +375,11 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 				}
 				if (!bMovementOverrideFloorNormal) {
 					Under = thisUnder;
-					FloorNormal = ThisNorm;
 					if (Cast<AStairs>(SweepResult.GetActor()) != NULL) {
-						DesiredUp = SweepResult.GetActor()->GetActorUpVector();
+						FloorNormal = SweepResult.GetActor()->GetActorUpVector();
 					}
-					else DesiredUp = FloorNormal;
+					else FloorNormal = ThisNorm;
 					FloorNormal.Normalize();
-					DesiredUp.Normalize();
 				}
 				MovementComp->DownVel = -FloorNormal * 30;
 			}

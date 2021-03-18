@@ -19,9 +19,12 @@ public:
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	UPROPERTY(EditAnywhere)
 		float StepHeight;
-	/*This handles both shadow sneak and max walkable angle Player won't be able to walk up nor sneak up angles higher than this.*/
+	/*Max slope player can walk up/down.*/
 	UPROPERTY(EditAnywhere)
 		float MaxAngle = 50;
+	/*Max angle the player can wall walk on relative to current up vector*/
+	UPROPERTY(EditAnywhere)
+		float ShadowMaxAngle = 90;
 	bool Running;
 	FVector DownVel = FVector::ZeroVector;
 	FVector JumpVel = FVector::ZeroVector;
