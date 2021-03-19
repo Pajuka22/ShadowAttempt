@@ -97,13 +97,6 @@ void APlayerPawn::Tick(float DeltaTime)
 		//find new up vector, avoiding overrotation.
 		FVector newUp = GetActorUpVector().RotateAngleAxis(FMath::Clamp(MaxRotateSpeed * DeltaTime, 0.0f, GetActorUpVector().RadiansToVector(tmpDesiredUp) * 180 / PI), CP);
 		//FVector newUp = GetActorUpVector().RotateAngleAxis(MaxRotateSpeed * DeltaTime, CP);
-		FVector v = GetActorUpVector();
-		if (!FVector::Coincident(camForward, GetActorForwardVector())) {
-			v = camForward;
-			if (v.DistanceInDirection(GetActorUpVector()) < 0) {
-				v.RotateAngleAxis(180, GetActorForwardVector());
-			}
-		}
 		FVector newRight = FVector::CrossProduct(newUp, GetActorForwardVector());
 		FVector newForward = FVector::CrossProduct(newRight, newUp);
 		
@@ -125,12 +118,12 @@ void APlayerPawn::Tick(float DeltaTime)
 			//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Yellow, "raidans to vector: " + FString::SanitizeFloat(FMath::Abs(camForward.RadiansToVector(GetActorUpVector()) - PI)));
 			if (camForward.DistanceInDirection(GetActorForwardVector()) <= 0) {
 				camLerp = 0;
-				//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Yellow, "fuck");
+				GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Yellow, "fuck");
 			}
 			MyCamera->SetWorldRotation(FQuat::Slerp(q, MyCamera->GetComponentQuat(), FMath::Abs(camLerp)));
 			bool preserved = camForward.Equals(MyCamera->GetForwardVector());
 			
-			//GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, FString::SanitizeFloat(camForward.RadiansToVector(MyCamera->GetForwardVector()) * 180 / PI));
+			GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, FString::SanitizeFloat(camForward.RadiansToVector(MyCamera->GetForwardVector()) * 180 / PI));
 		}
 	}
 
@@ -354,17 +347,19 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 			//MovementComp->GroundNum = Grounded;
 			MovementComp->DownVel = -FloorNormal * 30;
 			//ThisNorm.RadiansToVector(GetActorUpVector()) <= MovementComp->MaxAngle * PI / 180 && 
+			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, IsStepUp(thisUnder, ThisNorm) ? "is step" : "sure fucking isn't");
+			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Green, ThisNorm.ToString());
+			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, (thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel) >= (Under - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel) ? "true" : "false");
 			if (((angle < FloorAngle && (MovementComp->LateralVel.IsNearlyZero() || MovementComp->GroundNum == 1))||
 				(thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel) >= (Under - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel))
 				&& angle <= ((ShadowSneak ? MovementComp->SneakMaxAngle : MovementComp->MaxAngle) + 1) * PI / 180) {
 				
 				//DrawDebugLine(GetWorld(), Under, Under + 100 * FloorNormal, FColor::Green, false, 1, 0, 1);
-				
+				FloorAngle = angle;//ThisNorm.RadiansToVector(GetActorUpVector());
 				if (!FVector::Coincident(FloorNormal, ThisNorm)) {
 					OldNormal = FloorNormal;
 				}
 				if (angle > MovementComp->MaxAngle * PI / 180 ? !IsStepUp(thisUnder, ThisNorm) : true) {
-					FloorAngle = angle;//ThisNorm.RadiansToVector(GetActorUpVector());
 					Under = thisUnder;
 					FloorNormal = ThisNorm;
 					FloorNormal.Normalize();
