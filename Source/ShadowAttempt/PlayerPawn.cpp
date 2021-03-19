@@ -14,9 +14,9 @@
 #include "Runtime/Engine/Public/DrawDebugHelpers.h"
 #include "Runtime/Core/Public/Math/TransformNonVectorized.h"
 #include "Runtime/Engine/Classes/Curves/CurveVector.h"
+#include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "Stairs.h"
-//#include "Perception/AIPerceptionStimuliSourceComponent.h"
-
+#include "SneakIgnore.h"
 
 // Sets default values
 APlayerPawn::APlayerPawn()
@@ -25,14 +25,14 @@ APlayerPawn::APlayerPawn()
 	PrimaryActorTick.bCanEverTick = true;
 
 	Capsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Root Comp"));
-	
+
 	Capsule->SetCollisionProfileName(TEXT("Pawn"));
 	Capsule->SetCapsuleSize(NormalRadius, NormalHeight);
 	//Capsule->OnComponentBeginOverlap.AddDynamic(this, &APlayerPawn::RootCollision);
 	//Capsule->OnComponentEndOverlap.AddDynamic(this, &APlayerPawn::RootCollisionExit);
 	//Capsule->OnComponentHit.AddDynamic(this, &APlayerPawn::RootHit);
 	RootComponent = Capsule;
-	
+
 	MyCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	MyCamera->SetupAttachment(RootComponent);
 	MyCamera->SetRelativeLocation(FVector(0, 0, BaseEyeHeight));
@@ -48,6 +48,10 @@ APlayerPawn::APlayerPawn()
 void APlayerPawn::BeginPlay()
 {
 	Super::BeginPlay();
+
+	startHeight = Capsule->GetScaledCapsuleHalfHeight();
+	currentHeight = startHeight;
+	endHeight = NormalHeight;
 
 }
 
@@ -73,8 +77,8 @@ void APlayerPawn::Tick(float DeltaTime)
 	}
 	//reset grounded and floor angle
 	Grounded = 0;
-	FloorAngle = (MovementComp->ShadowMaxAngle + 5) * PI / 180;
-	
+	FloorAngle = PI / 2;
+
 	if (bBufferSprint) {
 		Sprint();
 	}
@@ -109,17 +113,16 @@ void APlayerPawn::Tick(float DeltaTime)
 			q = FTransform(camForward, GetActorRightVector(), newUp, MyCamera->GetComponentLocation()).GetRotation();
 			//see how much influence we want to give the rotation of the actor on the direction the camera is looking. This depends on the angle between the look direction and CP.
 			//if player is looking almost all the way up or almost all the way down, it has full influence
-			float camLerp = FMath::Cos(CP.RadiansToVector(camForward - tmpDesiredUp * camForward.DistanceInDirection(tmpDesiredUp)));
+			float camLerp = FMath::Cos(CP.RadiansToVector(camForward - DesiredUp * camForward.DistanceInDirection(tmpDesiredUp)));
 			camLerp = CamSneakInfluence;
 			//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Yellow, "raidans to vector: " + FString::SanitizeFloat(FMath::Abs(camForward.RadiansToVector(GetActorUpVector()) - PI)));
 			if (camForward.DistanceInDirection(GetActorForwardVector()) <= 0) {
-				camLerp = 1;
+				camLerp = 0;
 				GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Yellow, "fuck");
 			}
 			MyCamera->SetWorldRotation(FQuat::Slerp(q, MyCamera->GetComponentQuat(), FMath::Abs(camLerp)));
 		}
 	}
-	else bMovementOverrideFloorNormal = false;
 
 	//Setting movement speed
 	if (ShadowSneak) {
@@ -130,7 +133,7 @@ void APlayerPawn::Tick(float DeltaTime)
 		else if (bCrouch) MovementComp->MoveType = UCustomMovement::MovementType::Crouch;
 		else MovementComp->MoveType = UCustomMovement::MovementType::Walk;
 	}
-	
+
 	//interpolate capsule dimensions;
 	MovementComp->HeightAdjustVel = FVector::ZeroVector;
 	if (Capsule != nullptr && currentHeight != endHeight) {
@@ -151,7 +154,6 @@ void APlayerPawn::Tick(float DeltaTime)
 		RootComponent = Capsule;
 		MyCamera->SetRelativeLocation(FVector(0, 0, BaseEyeHeight / 100 * currentHeight));
 	}
-
 	Under = GetActorLocation();
 }
 
@@ -192,7 +194,7 @@ void APlayerPawn::TurnAtRate(float rate) {
 	RootComponent->SetWorldTransform(FTransform(newForward, newRight, RootComponent->GetUpVector(), GetActorLocation()));
 }
 void APlayerPawn::LookUpAtRate(float rate) {
-	//if(addrot is positive, looking down, negative looking up.
+	//MyCamera->SetRelativeRotation(MyCamera->RelativeRotation + FRotator(-rate, 0, 0));
 	float addrot = 5 * rate;
 	FRotator rot = MyCamera->GetRelativeRotation() + FRotator(-addrot, 0, 0);
 	rot = FRotator(FMath::Clamp(rot.Pitch, -90.0f, 90.0f), rot.Yaw, rot.Roll);
@@ -205,24 +207,6 @@ void APlayerPawn::LookUpAtRate(float rate) {
 		//FQuat q = FTransform(newForward, GetActorRightVector(), newUp, MyCamera->GetComponentLocation()).GetRotation();
 		MyCamera->SetWorldTransform(FTransform(newForward, GetActorRightVector(), newUp, MyCamera->GetComponentLocation()));
 	}
-	//this is old code. works most of the time, but not for my purposes.
-	/*
-	if (FMath::Acos(FVector::DotProduct(MyCamera->GetForwardVector(), RootComponent->GetUpVector())) < FMath::Abs(5 * rate * PI / 180) && addrot < 0) {
-		addrot = FMath::Acos(FVector::DotProduct(MyCamera->GetForwardVector(), RootComponent->GetUpVector()));
-	}
-	if (FMath::Acos(FVector::DotProduct(MyCamera->GetForwardVector(), RootComponent->GetUpVector() * -1)) < FMath::Abs(5 * rate * PI / 180) && addrot > 0) {
-		addrot = FMath::Acos(FVector::DotProduct(MyCamera->GetForwardVector(), -RootComponent->GetUpVector()));
-	}
-	
-	GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Purple, FString::SanitizeFloat(addrot));
-	//start standard working.
-	FVector newUp = MyCamera->GetUpVector().RotateAngleAxis(addrot, MyCamera->GetRightVector());
-	FVector newForward = MyCamera->GetForwardVector().RotateAngleAxis(addrot, MyCamera->GetRightVector());
-	MyCamera->SetWorldTransform(FTransform(newForward, MyCamera->GetRightVector(), newUp, MyCamera->GetComponentLocation()));
-	//end standard working
-	*/
-
-	//MyCamera->SetRelativeRotation(FRotator(FMath::ClampAngle(MyCamera->RelativeRotation.Pitch - 5 * rate, -90, 90), MyCamera->RelativeRotation.Yaw, MyCamera->RelativeRotation.Roll));
 }
 
 void APlayerPawn::StartEndSneak()
@@ -352,40 +336,65 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 				MovementComp->EndJump = true;
 			}
 		}
-		if (HittingBottom(SweepResult.ImpactPoint, MovementComp->MaxAngle) || ShadowSneak){
-			FVector ThisNorm = SweepResult.ImpactNormal;
+		if (HittingBottom(SweepResult.ImpactPoint, (ShadowSneak ? MovementComp->SneakMaxAngle : MovementComp->MaxAngle) + 1)) {
+			/*FVector ThisNorm = SweepResult.ImpactNormal;
 			ThisNorm.Normalize();
 			FVector thisUnder = SweepResult.ImpactPoint;
 			float angle = ThisNorm.RadiansToVector(GetActorUpVector());
 			Grounded++;
-			//ThisNorm.RadiansToVector(GetActorUpVector()) <= MovementComp->MaxAngle * PI / 180 && 
-			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Orange, FString::SanitizeFloat((thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel)));
-			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, FString::SanitizeFloat((Under - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel)));
-			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Cyan, FString::SanitizeFloat(angle * 180 / PI) + " vs " + FString::SanitizeFloat((ShadowSneak ? MovementComp->ShadowMaxAngle + 1: MovementComp->MaxAngle + 1)));
-			//basically if that impact point is closer to the direction the player's moving in and the angle's valid
-			if ((angle < FloorAngle || 
-				(thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel) >= (Under - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel))
-				&& angle <= (ShadowSneak ? MovementComp->ShadowMaxAngle + 1 : MovementComp->MaxAngle + 1) * PI/180) {
+			MovementComp->GroundNum = Grounded;
+			//ThisNorm.RadiansToVector(GetActorUpVector()) <= MovementComp->MaxAngle * PI / 180 &&
+			if (angle <= FloorAngle && angle <= (ShadowSneak ? MovementComp->SneakMaxAngle + 1 : MovementComp->MaxAngle + 1) * PI / 180) {
 				//DrawDebugLine(GetWorld(), Under, Under + 100 * FloorNormal, FColor::Green, false, 1, 0, 1);
-				
-				MovementComp->GroundNum = Grounded;
+
+				FloorAngle = angle;//ThisNorm.RadiansToVector(GetActorUpVector());
+				FloorNormal = ThisNorm;
+				if (SweepResult.GetActor() != NULL) {
+					if (SweepResult.GetActor()->IsA(AStairs::StaticClass())) {
+						DesiredUp = SweepResult.GetActor()->GetActorUpVector();
+						MovementComp->DownVel = -FloorNormal * 0.5;
+					}
+					else {
+						if (SweepResult.GetActor()->FindComponentByClass<USneakIgnore>() == NULL) {
+							DesiredUp = FloorNormal;
+							MovementComp->DownVel = -FloorNormal * 0.5;
+						}
+						else {
+							MovementComp->DownVel = FVector::ZeroVector;
+						}
+					}
+				}
+				else {
+					DesiredUp = FloorNormal;
+					MovementComp->DownVel = -FloorNormal * 0.5;
+				}
+
+			}*/
+			FVector ThisNorm = SweepResult.ImpactNormal;
+			ThisNorm.Normalize();
+			Under = SweepResult.ImpactPoint;
+			float angle = ThisNorm.RadiansToVector(GetActorUpVector());
+			Grounded++;
+			MovementComp->GroundNum = Grounded;
+			MovementComp->DownVel = -FloorNormal * 30;
+			//ThisNorm.RadiansToVector(GetActorUpVector()) <= MovementComp->MaxAngle * PI / 180 && 
+			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, IsStepUp(Under, ThisNorm) ? "is step" : "sure fucking isn't");
+			if (angle < FloorAngle && angle <= (ShadowSneak ? MovementComp->SneakMaxAngle : MovementComp->MaxAngle) * PI / 180) {
+				//DrawDebugLine(GetWorld(), Under, Under + 100 * FloorNormal, FColor::Green, false, 1, 0, 1);
 				FloorAngle = angle;//ThisNorm.RadiansToVector(GetActorUpVector());
 				if (!FVector::Coincident(FloorNormal, ThisNorm)) {
 					OldNormal = FloorNormal;
 				}
-				if (!bMovementOverrideFloorNormal) {
-					Under = thisUnder;
+				if (angle > MovementComp->MaxAngle * PI / 180 ? !IsStepUp(Under, ThisNorm) : true) {
 					FloorNormal = ThisNorm;
-					if (Cast<AStairs>(SweepResult.GetActor()) != NULL) {
-						DesiredUp = SweepResult.GetActor()->GetActorUpVector();
-					}
-					else DesiredUp = FloorNormal;
 					FloorNormal.Normalize();
-					DesiredUp.Normalize();
+					MovementComp->DownVel = -FloorNormal * 300;
+					if (SweepResult.GetActor() != NULL ? SweepResult.GetActor()->FindComponentByClass<USneakIgnore>() == NULL : true) {
+						DesiredUp = FloorNormal;
+					}
 				}
-				MovementComp->DownVel = -FloorNormal * 30;
 			}
-		}	
+		}
 	}
 }
 
@@ -394,9 +403,9 @@ bool APlayerPawn::HittingBottom(FVector hitPos, float maxDeg) {
 	return (center - hitPos).RadiansToVector(Capsule->GetUpVector()) <= maxDeg * PI / 180;
 }
 
-bool APlayerPawn::IsStepUp(FVector hitPos) {
+bool APlayerPawn::IsStepUp(FVector hitPos, FVector hitNormal) {
 	FVector center = GetActorLocation() - Capsule->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere();
-	return (hitPos - center).DistanceInDirection(-GetActorUpVector()) <= Capsule->GetScaledCapsuleRadius() - MovementComp->StepHeight;
+	return (center - hitPos).RadiansToVector(hitNormal) > 5 * PI / 180;
 }
 
 bool APlayerPawn::CheckGrounded() {

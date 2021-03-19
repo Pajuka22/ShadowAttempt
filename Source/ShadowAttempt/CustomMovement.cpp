@@ -18,7 +18,7 @@ void UCustomMovement::BeginPlay() {
 void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, DownVel.ToString());
 	// Make sure that everything is still valid, and that we are allowed to move.
 	if (!PawnOwner || !Capsule || ShouldSkipUpdate(DeltaTime))
 	{
@@ -66,6 +66,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 			SlideAlongSurface(DesiredMovementThisFrame, 1.f - outHit.Time, outHit.Normal, outHit);
 		}
 	}
+
 	//comment this if statement out if it doesn't work. chances are it won't, and it's fine as is.
 	/*if (MoveType == MovementType::Sneak) {
 		
@@ -110,6 +111,7 @@ void UCustomMovement::SetSpeed()
 }
 void UCustomMovement::Jump() {
 	if (CanJump()) {
+		DownVel = FVector::ZeroVector;
 		GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Purple, "YEET");
 		JumpVel += UpdatedComponent->GetUpVector() * (Pawn->ShadowSneak ? 200 * FMath::Sqrt(Gravity * (JumpHeight + (Pawn->NormalHeight - Pawn->SneakHeight)/100)) : JumpSpeed);
 		StartJump = true;

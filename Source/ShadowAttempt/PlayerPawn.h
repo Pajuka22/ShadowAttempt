@@ -102,6 +102,7 @@ protected:
 	float endHeight;
 	float currentHeight;
 	float addHeight;
+	int hitsThisFrame;
 
 	void MoveForward(float Val);
 	void MoveRight(float Val);
@@ -120,7 +121,7 @@ protected:
 	void GetAddHeight();
 
 	bool HittingBottom(FVector hitPos, float maxDeg = 90);
-	bool IsStepUp(FVector hitPos);
+	bool IsStepUp(FVector hitPos, FVector hitNormal);
 
 	float FloorAngle = 60;
 	int notGroundedTime;
