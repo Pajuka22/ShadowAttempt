@@ -24,7 +24,7 @@ public:
 		float MaxAngle = 50;
 	/*Max angle the player can wall walk on relative to current up vector*/
 	UPROPERTY(EditAnywhere)
-		float ShadowMaxAngle = 90;
+		float SneakMaxAngle = 90;
 	bool Running;
 	FVector DownVel = FVector::ZeroVector;
 	FVector JumpVel = FVector::ZeroVector;
