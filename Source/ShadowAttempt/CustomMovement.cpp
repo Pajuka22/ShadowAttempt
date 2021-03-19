@@ -58,8 +58,8 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	
 	if (!DesiredMovementThisFrame.IsNearlyZero())
 	{
-		Pawn->Under = Pawn->GetActorLocation();
 		SafeMoveUpdatedComponent(DesiredMovementThisFrame, UpdatedComponent->GetComponentRotation(), true, outHit);
+
 		// If we bumped into something, try to slide along it
 		if (outHit.IsValidBlockingHit())
 		{
