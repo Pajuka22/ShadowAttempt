@@ -97,8 +97,9 @@ void APlayerPawn::Tick(float DeltaTime)
 		//find new up vector, avoiding overrotation.
 		FVector newUp = GetActorUpVector().RotateAngleAxis(FMath::Clamp(MaxRotateSpeed * DeltaTime, 0.0f, GetActorUpVector().RadiansToVector(tmpDesiredUp) * 180 / PI), CP);
 		//FVector newUp = GetActorUpVector().RotateAngleAxis(MaxRotateSpeed * DeltaTime, CP);
-		FVector newForward = FVector::CrossProduct(RootComponent->GetRightVector(), newUp);
-		FVector newRight = FVector::CrossProduct(newUp, newForward);
+		FVector newRight = FVector::CrossProduct(newUp, GetActorForwardVector());
+		FVector newForward = FVector::CrossProduct(newRight, newUp);
+		
 		//construct a quat to rotate player to.
 		FQuat q = FTransform(newForward, newRight, newUp, GetActorLocation()).GetRotation();
 		//store actual angle rotated to reference when I rotate the camera.
@@ -107,7 +108,7 @@ void APlayerPawn::Tick(float DeltaTime)
 
 		//up direction. keep in mind that looking side to side rotates the entire player, so cam forward and actor right will always be perpendicular.
 		if (!FVector::Coincident(MyCamera->GetForwardVector(), camForward)) {
-			/*newUp = FVector::CrossProduct(camForward, GetActorRightVector());
+			newUp = FVector::CrossProduct(camForward, GetActorRightVector());
 			newUp.Normalize();
 			q = FTransform(camForward, GetActorRightVector(), newUp, MyCamera->GetComponentLocation()).GetRotation();
 			//see how much influence we want to give the rotation of the actor on the direction the camera is looking. This depends on the angle between the look direction and CP.
@@ -122,19 +123,6 @@ void APlayerPawn::Tick(float DeltaTime)
 			MyCamera->SetWorldRotation(FQuat::Slerp(q, MyCamera->GetComponentQuat(), FMath::Abs(camLerp)));
 			bool preserved = camForward.Equals(MyCamera->GetForwardVector());
 			
-			GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, FString::SanitizeFloat(camForward.RadiansToVector(MyCamera->GetForwardVector()) * 180 / PI));
-			*/
-			newUp = FVector::CrossProduct(camForward, GetActorRightVector());
-			newRight = FVector::CrossProduct(GetActorUpVector(), camForward);
-			TurnAtRate(FMath::Sign(FVector::CrossProduct(GetActorRightVector(), newRight).DistanceInDirection(GetActorUpVector())) * newRight.RadiansToVector(GetActorRightVector()) * 180 / PI / 5);
-			float camLerp = CamSneakInfluence;
-			if (camForward.DistanceInDirection(GetActorForwardVector()) <= 0) {
-				camLerp = 0;
-				GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Yellow, "fuck");
-			}
-			q = FTransform(camForward, newRight, newUp, MyCamera->GetComponentLocation()).GetRotation();
-			MyCamera->SetWorldRotation(FQuat::Slerp(q, MyCamera->GetComponentQuat(), FMath::Abs(camLerp)));
-			bool preserved = camForward.Equals(MyCamera->GetForwardVector());
 			GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, FString::SanitizeFloat(camForward.RadiansToVector(MyCamera->GetForwardVector()) * 180 / PI));
 		}
 	}
@@ -345,7 +333,6 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 				}
 			}
 			else {
-				GEngine->AddOnScreenDebugMessage(-1, 0.5, FColor::Green, "true");
 				MovementComp->StartJump = false;
 				MovementComp->JumpVel = FVector(0, 0, 0);
 				MovementComp->EndJump = true;
@@ -357,22 +344,26 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 			FVector thisUnder = SweepResult.ImpactPoint;
 			float angle = ThisNorm.RadiansToVector(GetActorUpVector());
 			Grounded++;
-			MovementComp->GroundNum = Grounded;
+			//MovementComp->GroundNum = Grounded;
 			MovementComp->DownVel = -FloorNormal * 30;
 			//ThisNorm.RadiansToVector(GetActorUpVector()) <= MovementComp->MaxAngle * PI / 180 && 
-			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, IsStepUp(Under, ThisNorm) ? "is step" : "sure fucking isn't");
-			if (((angle < FloorAngle && (MovementComp->LateralVel.IsNearlyZero() || Grounded == 1))||
+			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, IsStepUp(thisUnder, ThisNorm) ? "is step" : "sure fucking isn't");
+			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Green, ThisNorm.ToString());
+			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, (thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel) >= (Under - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel) ? "true" : "false");
+			if (((angle < FloorAngle && (MovementComp->LateralVel.IsNearlyZero() || MovementComp->GroundNum == 1))||
 				(thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel) >= (Under - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel))
-				&& angle <= (ShadowSneak ? MovementComp->SneakMaxAngle : MovementComp->MaxAngle) * PI / 180) {
-				Under = thisUnder;
+				&& angle <= ((ShadowSneak ? MovementComp->SneakMaxAngle : MovementComp->MaxAngle) + 1) * PI / 180) {
+				
 				//DrawDebugLine(GetWorld(), Under, Under + 100 * FloorNormal, FColor::Green, false, 1, 0, 1);
 				FloorAngle = angle;//ThisNorm.RadiansToVector(GetActorUpVector());
 				if (!FVector::Coincident(FloorNormal, ThisNorm)) {
 					OldNormal = FloorNormal;
 				}
-				if (angle > MovementComp->MaxAngle * PI / 180 ? !IsStepUp(Under, ThisNorm) : true) {
+				if (angle > MovementComp->MaxAngle * PI / 180 ? !IsStepUp(thisUnder, ThisNorm) : true) {
+					Under = thisUnder;
 					FloorNormal = ThisNorm;
 					FloorNormal.Normalize();
+					FloorAngle = angle;
 					MovementComp->DownVel = -FloorNormal * 300;
 					if (SweepResult.GetActor() != NULL ? SweepResult.GetActor()->FindComponentByClass<USneakIgnore>() == NULL : true) {
 						DesiredUp = FloorNormal;
@@ -390,6 +381,7 @@ bool APlayerPawn::HittingBottom(FVector hitPos, float maxDeg) {
 
 bool APlayerPawn::IsStepUp(FVector hitPos, FVector hitNormal) {
 	FVector center = GetActorLocation() - Capsule->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere();
+	//GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, FString::SanitizeFloat((center - hitPos).RadiansToVector(hitNormal) * 180 / PI));
 	return (center - hitPos).RadiansToVector(hitNormal) > 5 * PI / 180;
 }
 
