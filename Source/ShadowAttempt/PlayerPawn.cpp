@@ -372,14 +372,17 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 			}*/
 			FVector ThisNorm = SweepResult.ImpactNormal;
 			ThisNorm.Normalize();
-			Under = SweepResult.ImpactPoint;
+			FVector thisUnder = SweepResult.ImpactPoint;
 			float angle = ThisNorm.RadiansToVector(GetActorUpVector());
 			Grounded++;
 			MovementComp->GroundNum = Grounded;
 			MovementComp->DownVel = -FloorNormal * 30;
 			//ThisNorm.RadiansToVector(GetActorUpVector()) <= MovementComp->MaxAngle * PI / 180 && 
 			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, IsStepUp(Under, ThisNorm) ? "is step" : "sure fucking isn't");
-			if (angle < FloorAngle && angle <= (ShadowSneak ? MovementComp->SneakMaxAngle : MovementComp->MaxAngle) * PI / 180) {
+			if (((angle < FloorAngle && (MovementComp->LateralVel.IsNearlyZero() || Grounded == 1))||
+				(thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel) >= (Under - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel))
+				&& angle <= (ShadowSneak ? MovementComp->SneakMaxAngle : MovementComp->MaxAngle) * PI / 180) {
+				Under = thisUnder;
 				//DrawDebugLine(GetWorld(), Under, Under + 100 * FloorNormal, FColor::Green, false, 1, 0, 1);
 				FloorAngle = angle;//ThisNorm.RadiansToVector(GetActorUpVector());
 				if (!FVector::Coincident(FloorNormal, ThisNorm)) {
