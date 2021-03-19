@@ -105,14 +105,15 @@ void APlayerPawn::Tick(float DeltaTime)
 		float angle = q.AngularDistance(GetActorQuat());
 		RootComponent->SetWorldRotation(q);
 
+		//desired look direction
+
 		//up direction. keep in mind that looking side to side rotates the entire player, so cam forward and actor right will always be perpendicular.
 		if (!FVector::Coincident(MyCamera->GetForwardVector(), camForward)) {
-			/*newUp = FVector::CrossProduct(camForward, GetActorRightVector());
-			newUp.Normalize();
+			newUp = FVector::CrossProduct(camForward, GetActorRightVector());
 			q = FTransform(camForward, GetActorRightVector(), newUp, MyCamera->GetComponentLocation()).GetRotation();
 			//see how much influence we want to give the rotation of the actor on the direction the camera is looking. This depends on the angle between the look direction and CP.
 			//if player is looking almost all the way up or almost all the way down, it has full influence
-			float camLerp;// = FMath::Cos(CP.RadiansToVector(camForward - DesiredUp * camForward.DistanceInDirection(tmpDesiredUp)));
+			float camLerp = FMath::Cos(CP.RadiansToVector(camForward - DesiredUp * camForward.DistanceInDirection(tmpDesiredUp)));
 			camLerp = CamSneakInfluence;
 			//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Yellow, "raidans to vector: " + FString::SanitizeFloat(FMath::Abs(camForward.RadiansToVector(GetActorUpVector()) - PI)));
 			if (camForward.DistanceInDirection(GetActorForwardVector()) <= 0) {
@@ -120,22 +121,6 @@ void APlayerPawn::Tick(float DeltaTime)
 				GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Yellow, "fuck");
 			}
 			MyCamera->SetWorldRotation(FQuat::Slerp(q, MyCamera->GetComponentQuat(), FMath::Abs(camLerp)));
-			bool preserved = camForward.Equals(MyCamera->GetForwardVector());
-			
-			GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, FString::SanitizeFloat(camForward.RadiansToVector(MyCamera->GetForwardVector()) * 180 / PI));
-			*/
-			newUp = FVector::CrossProduct(camForward, GetActorRightVector());
-			newRight = FVector::CrossProduct(GetActorUpVector(), camForward);
-			TurnAtRate(FMath::Sign(FVector::CrossProduct(GetActorRightVector(), newRight).DistanceInDirection(GetActorUpVector())) * newRight.RadiansToVector(GetActorRightVector()) * 180 / PI / 5);
-			float camLerp = CamSneakInfluence;
-			if (camForward.DistanceInDirection(GetActorForwardVector()) <= 0) {
-				camLerp = 0;
-				GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Yellow, "fuck");
-			}
-			q = FTransform(camForward, newRight, newUp, MyCamera->GetComponentLocation()).GetRotation();
-			MyCamera->SetWorldRotation(FQuat::Slerp(q, MyCamera->GetComponentQuat(), FMath::Abs(camLerp)));
-			bool preserved = camForward.Equals(MyCamera->GetForwardVector());
-			GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, FString::SanitizeFloat(camForward.RadiansToVector(MyCamera->GetForwardVector()) * 180 / PI));
 		}
 	}
 
@@ -352,6 +337,39 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 			}
 		}
 		if (HittingBottom(SweepResult.ImpactPoint, (ShadowSneak ? MovementComp->SneakMaxAngle : MovementComp->MaxAngle) + 1)) {
+			/*FVector ThisNorm = SweepResult.ImpactNormal;
+			ThisNorm.Normalize();
+			FVector thisUnder = SweepResult.ImpactPoint;
+			float angle = ThisNorm.RadiansToVector(GetActorUpVector());
+			Grounded++;
+			MovementComp->GroundNum = Grounded;
+			//ThisNorm.RadiansToVector(GetActorUpVector()) <= MovementComp->MaxAngle * PI / 180 &&
+			if (angle <= FloorAngle && angle <= (ShadowSneak ? MovementComp->SneakMaxAngle + 1 : MovementComp->MaxAngle + 1) * PI / 180) {
+				//DrawDebugLine(GetWorld(), Under, Under + 100 * FloorNormal, FColor::Green, false, 1, 0, 1);
+
+				FloorAngle = angle;//ThisNorm.RadiansToVector(GetActorUpVector());
+				FloorNormal = ThisNorm;
+				if (SweepResult.GetActor() != NULL) {
+					if (SweepResult.GetActor()->IsA(AStairs::StaticClass())) {
+						DesiredUp = SweepResult.GetActor()->GetActorUpVector();
+						MovementComp->DownVel = -FloorNormal * 0.5;
+					}
+					else {
+						if (SweepResult.GetActor()->FindComponentByClass<USneakIgnore>() == NULL) {
+							DesiredUp = FloorNormal;
+							MovementComp->DownVel = -FloorNormal * 0.5;
+						}
+						else {
+							MovementComp->DownVel = FVector::ZeroVector;
+						}
+					}
+				}
+				else {
+					DesiredUp = FloorNormal;
+					MovementComp->DownVel = -FloorNormal * 0.5;
+				}
+
+			}*/
 			FVector ThisNorm = SweepResult.ImpactNormal;
 			ThisNorm.Normalize();
 			FVector thisUnder = SweepResult.ImpactPoint;
