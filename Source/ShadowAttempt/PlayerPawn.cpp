@@ -49,6 +49,10 @@ void APlayerPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
+	startHeight = Capsule->GetScaledCapsuleHalfHeight();
+	currentHeight = startHeight;
+	endHeight = NormalHeight;
+
 }
 
 // Called every frame
@@ -339,10 +343,10 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 			float angle = ThisNorm.RadiansToVector(GetActorUpVector());
 			Grounded++;
 			MovementComp->GroundNum = Grounded;
-			//ThisNorm.RadiansToVector(GetActorUpVector()) <= MovementComp->MaxAngle * PI / 180 && 
+			//ThisNorm.RadiansToVector(GetActorUpVector()) <= MovementComp->MaxAngle * PI / 180 &&
 			if (angle <= FloorAngle && angle <= (ShadowSneak ? MovementComp->SneakMaxAngle + 1 : MovementComp->MaxAngle + 1) * PI / 180) {
 				//DrawDebugLine(GetWorld(), Under, Under + 100 * FloorNormal, FColor::Green, false, 1, 0, 1);
-				
+
 				FloorAngle = angle;//ThisNorm.RadiansToVector(GetActorUpVector());
 				FloorNormal = ThisNorm;
 				if (SweepResult.GetActor() != NULL) {
@@ -364,7 +368,7 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 					DesiredUp = FloorNormal;
 					MovementComp->DownVel = -FloorNormal * 0.5;
 				}
-				
+
 			}*/
 			FVector ThisNorm = SweepResult.ImpactNormal;
 			ThisNorm.Normalize();
@@ -372,9 +376,10 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 			float angle = ThisNorm.RadiansToVector(GetActorUpVector());
 			Grounded++;
 			MovementComp->GroundNum = Grounded;
+			MovementComp->DownVel = -FloorNormal * 30;
 			//ThisNorm.RadiansToVector(GetActorUpVector()) <= MovementComp->MaxAngle * PI / 180 && 
 			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, IsStepUp(Under, ThisNorm) ? "is step" : "sure fucking isn't");
-			if (angle < FloorAngle && angle <= (ShadowSneak ? MovementComp->SneakMaxAngle: MovementComp->MaxAngle) * PI / 180) {
+			if (angle < FloorAngle && angle <= (ShadowSneak ? MovementComp->SneakMaxAngle : MovementComp->MaxAngle) * PI / 180) {
 				//DrawDebugLine(GetWorld(), Under, Under + 100 * FloorNormal, FColor::Green, false, 1, 0, 1);
 				FloorAngle = angle;//ThisNorm.RadiansToVector(GetActorUpVector());
 				if (!FVector::Coincident(FloorNormal, ThisNorm)) {
@@ -383,7 +388,7 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 				if (angle > MovementComp->MaxAngle * PI / 180 ? !IsStepUp(Under, ThisNorm) : true) {
 					FloorNormal = ThisNorm;
 					FloorNormal.Normalize();
-					MovementComp->DownVel = -FloorNormal * 30;
+					MovementComp->DownVel = -FloorNormal * 300;
 					if (SweepResult.GetActor() != NULL ? SweepResult.GetActor()->FindComponentByClass<USneakIgnore>() == NULL : true) {
 						DesiredUp = FloorNormal;
 					}

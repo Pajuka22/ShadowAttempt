@@ -102,6 +102,7 @@ protected:
 	float endHeight;
 	float currentHeight;
 	float addHeight;
+	int hitsThisFrame;
 
 	void MoveForward(float Val);
 	void MoveRight(float Val);
