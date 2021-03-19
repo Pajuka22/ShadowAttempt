@@ -129,10 +129,6 @@ void APlayerPawn::Tick(float DeltaTime)
 		else if (bCrouch) MovementComp->MoveType = UCustomMovement::MovementType::Crouch;
 		else MovementComp->MoveType = UCustomMovement::MovementType::Walk;
 	}
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Green, FString::SanitizeFloat(MovementComp->MovementSpeed));
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, "height: " + FString::SanitizeFloat(Capsule->GetScaledCapsuleHalfHeight()));
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, "radius: " + FString::SanitizeFloat(Capsule->GetScaledCapsuleRadius()));
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(addHeight));
 
 	//interpolate capsule dimensions;
 	MovementComp->HeightAdjustVel = FVector::ZeroVector;
@@ -377,19 +373,20 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 			Grounded++;
 			MovementComp->GroundNum = Grounded;
 			//ThisNorm.RadiansToVector(GetActorUpVector()) <= MovementComp->MaxAngle * PI / 180 && 
-			
-			if (angle < FloorAngle && angle <= (MovementComp->MaxAngle) * PI / 180) {
+			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, IsStepUp(Under, ThisNorm) ? "is step" : "sure fucking isn't");
+			if (angle < FloorAngle && angle <= (ShadowSneak ? MovementComp->SneakMaxAngle: MovementComp->MaxAngle) * PI / 180) {
 				//DrawDebugLine(GetWorld(), Under, Under + 100 * FloorNormal, FColor::Green, false, 1, 0, 1);
 				FloorAngle = angle;//ThisNorm.RadiansToVector(GetActorUpVector());
 				if (!FVector::Coincident(FloorNormal, ThisNorm)) {
 					OldNormal = FloorNormal;
 				}
-				FloorNormal = ThisNorm;
-				FloorNormal.Normalize();
-				MovementComp->DownVel = -FloorNormal * 30;
-				if (SweepResult.GetActor() != NULL ? SweepResult.GetActor()->FindComponentByClass<USneakIgnore>() == NULL : true) {
-					DesiredUp = FloorNormal;
-					
+				if (angle > MovementComp->MaxAngle * PI / 180 ? !IsStepUp(Under, ThisNorm) : true) {
+					FloorNormal = ThisNorm;
+					FloorNormal.Normalize();
+					MovementComp->DownVel = -FloorNormal * 30;
+					if (SweepResult.GetActor() != NULL ? SweepResult.GetActor()->FindComponentByClass<USneakIgnore>() == NULL : true) {
+						DesiredUp = FloorNormal;
+					}
 				}
 			}
 		}
@@ -401,9 +398,9 @@ bool APlayerPawn::HittingBottom(FVector hitPos, float maxDeg) {
 	return (center - hitPos).RadiansToVector(Capsule->GetUpVector()) <= maxDeg * PI / 180;
 }
 
-bool APlayerPawn::IsStepUp(FVector hitPos) {
+bool APlayerPawn::IsStepUp(FVector hitPos, FVector hitNormal) {
 	FVector center = GetActorLocation() - Capsule->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere();
-	return (hitPos - center).DistanceInDirection(-GetActorUpVector()) <= Capsule->GetScaledCapsuleRadius() - MovementComp->StepHeight;
+	return (center - hitPos).RadiansToVector(hitNormal) > 5 * PI / 180;
 }
 
 bool APlayerPawn::CheckGrounded() {

@@ -120,7 +120,7 @@ protected:
 	void GetAddHeight();
 
 	bool HittingBottom(FVector hitPos, float maxDeg = 90);
-	bool IsStepUp(FVector hitPos, FVector hitNormal);
+	bool IsStepUp(FVector hitPos);
 
 	float FloorAngle = 60;
 	int notGroundedTime;
