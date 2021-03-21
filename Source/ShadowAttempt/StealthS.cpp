@@ -33,7 +33,6 @@ void AStealthS::Tick(float DeltaTime)
 		Player->MyVis -= value;
 	}
 	value = Player->SStealth(GetActorLocation(), Source->InnerConeAngle, Source->OuterConeAngle, Source->AttenuationRadius, GetActorForwardVector(), Source->Intensity);
-	GEngine->AddOnScreenDebugMessage(-1, 0.2f, FColor::Green, FString::SanitizeFloat(value.Vis));
 	HitLast = value.Vis >= 0;
 	Player->MyVis += value;
 }

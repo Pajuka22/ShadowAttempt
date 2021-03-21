@@ -345,7 +345,6 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 				(thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel) >= (Under - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel))
 				&& angle <= ((ShadowSneak ? MovementComp->SneakMaxAngle : MovementComp->MaxAngle) + 1) * PI / 180) {
 				Under = thisUnder;
-				//DrawDebugLine(GetWorld(), Under, Under + 100 * FloorNormal, FColor::Green, false, 1, 0, 1);
 				FloorAngle = angle;//ThisNorm.RadiansToVector(GetActorUpVector());
 				if (!FVector::Coincident(FloorNormal, ThisNorm)) {
 					OldNormal = FloorNormal;
@@ -435,7 +434,7 @@ PlayerVisibility APlayerPawn::SStealth(FVector location, float inner, float oute
 	float g = 0;
 	float mult = 0;
 	//UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(RootComponent);
-	if (Capsule != nullptr) {
+	if (Capsule != nullptr && (GetActorLocation() - location).Size() <= Attenuation) {
 		float angle;
 		FVector Start;
 		FHitResult outHit;
@@ -448,42 +447,46 @@ PlayerVisibility APlayerPawn::SStealth(FVector location, float inner, float oute
 				x = i * Capsule->GetScaledCapsuleRadius();
 				y = j * Capsule->GetScaledCapsuleHalfHeight();
 				Start = GetActorLocation() + GetActorRightVector() * x + GetActorUpVector() * y;
-				angle = FMath::Acos(FVector::DotProduct(SpotAngle, (location - Start)) / (SpotAngle.Size() * (location - Start).Size())) * 180 / PI;
-				
-				GetWorld()->LineTraceSingleByChannel(outHit, Start, location, ECC_Visibility, params);
-				if (!outHit.bBlockingHit && angle <= outer && (location - Start).Size() < Attenuation) {
-					if (angle <= inner) {
-						++mult;
-					}
-					else {
-						mult += (outer - angle) / (outer - inner);
-					}
-					if (j == -1) {
-						g = (angle <= inner ? 1 : (outer - angle) / (outer - inner)) *
-							(2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000) / FMath::Pow((location - Start).Size(), 2);
+				angle = SpotAngle.RadiansToVector(Start - location) * 180 / PI;
+				if (angle <= outer) {
+					GetWorld()->LineTraceSingleByChannel(outHit, Start, location, ECC_Visibility, params);
+					DrawDebugLine(GetWorld(), Start, location, FColor::Blue, false, 1 / 60, 0, 1);
+					if (!outHit.bBlockingHit) {
+						if (angle <= inner) {
+							++mult;
+						}
+						else {
+							mult += (outer - angle) / (outer - inner);
+						}
+						if (j == -1) {
+							g = (angle <= inner ? 1 : (outer - angle) / (outer - inner)) *
+								(2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000) / FMath::Pow((location - Start).Size(), 2);
+						}
 					}
 				}
 				if (j != 0) continue;
 
 				Start = GetActorLocation() + GetActorForwardVector() * x;
-				angle = FMath::Acos(FVector::DotProduct(SpotAngle, (location - Start)) / (SpotAngle.Size() * (location - Start).Size())) * 180 / PI;
-
-				GetWorld()->LineTraceSingleByChannel(outHit, Start, location, ECC_Visibility, params);
-				if (!outHit.bBlockingHit && angle <= outer && (location - Start).Size() < Attenuation) {
-					if (angle <= inner) {
-						++mult;
-					}
-					else {
-						mult += (outer - angle) / (outer - inner);
+				angle = SpotAngle.RadiansToVector(Start - location) * 180 / PI;
+				if (angle <= outer) {
+					DrawDebugLine(GetWorld(), Start, location, FColor::Blue, false, 1 / 60, 0, 1);
+					GetWorld()->LineTraceSingleByChannel(outHit, Start, location, ECC_Visibility, params);
+					if (!outHit.bBlockingHit) {
+						if (angle <= inner) {
+							++mult;
+						}
+						else {
+							mult += (outer - angle) / (outer - inner);
+						}
 					}
 				}
 			}
 		}
+		GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, FString::SanitizeFloat(mult));
+		return PlayerVisibility(mult / 6 * (2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000) / FMath::Pow((GetActorLocation() - location).Size(), 2), g);
 	}
-	else {
-		return PlayerVisibility(0, 0);
-	}
-	return PlayerVisibility(mult/6 * (2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000) / FMath::Pow((GetActorLocation() - location).Size(), 2), g);
+	return PlayerVisibility(0, 0);
+	//return PlayerVisibility(mult/6 * (2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000) / FMath::Pow((GetActorLocation() - location).Size(), 2), g);
 }
 PlayerVisibility APlayerPawn::DStealth(FVector direction, float intensity, float length) {
 	float g = 0;
