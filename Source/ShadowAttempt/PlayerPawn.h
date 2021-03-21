@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "PlayerVisibility.h"
 #include "PlayerPawn.generated.h"
 
 UCLASS()
@@ -73,15 +74,25 @@ public:
 	struct Visibility {
 		float Vis;
 		float GroundVis;
+		/*Visibility(float v, float g) {
+			Vis = v;
+			GroundVis = g;
+		}
+		Visibility operator*=(float scale) {
+			Vis *= scale;
+			GroundVis *= scale;
+			return *this;
+		}
+		Visibility operator+(Visibility& v1, Visibility& v2) const{
+			
+		}*/
 	};
 
-	Visibility  DStealth(FVector angle, float magnitude, float length);
-	Visibility SStealth(FVector spotlight, float inner, float outer, float Attenuation, FVector spotAngle, float Candelas);
-	Visibility PStealth(FVector position, float attenuation, float Candelas);
+	PlayerVisibility DStealth(FVector angle, float magnitude, float length);
+	PlayerVisibility SStealth(FVector spotlight, float inner, float outer, float Attenuation, FVector spotAngle, float Candelas);
+	PlayerVisibility PStealth(FVector position, float attenuation, float Candelas);
 
-	Visibility MyVis;
-	void AddVis(Visibility vis);
-	void SubVis(Visibility vis);
+	PlayerVisibility MyVis;
 	float GetCapsuleVisibleArea();
 
 	FVector FloorNormal;
@@ -120,7 +131,7 @@ protected:
 	void BufferEndCrouch();
 	void GetAddHeight();
 
-	bool HittingBottom(FVector hitPos, float maxDeg = 90);
+	bool HittingBottom(FVector hitPos, float maxDeg = 90, bool top = false);
 	bool IsStepUp(FVector hitPos, FVector hitNormal);
 
 	float FloorAngle = 60;

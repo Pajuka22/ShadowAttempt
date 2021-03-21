@@ -12,13 +12,11 @@ void UCustomMovement::BeginPlay() {
 	StartJump = false;
 	//i've written this out this way to make it more readable. multiplying both jump height and gravity by 100 because m to cm, 4 because of the way quadratic functions are
 	JumpSpeed = FMath::Sqrt(100 * JumpHeight * 4 * 100 * Gravity);
-	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Yellow, "Jump Speed: " + FString::SanitizeFloat(JumpSpeed));
 }
 
 void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, DownVel.ToString());
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction); 
 	// Make sure that everything is still valid, and that we are allowed to move.
 	if (!PawnOwner || !Capsule || ShouldSkipUpdate(DeltaTime))
 	{
@@ -112,8 +110,7 @@ void UCustomMovement::SetSpeed()
 void UCustomMovement::Jump() {
 	if (CanJump()) {
 		DownVel = FVector::ZeroVector;
-		GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Purple, "YEET");
-		JumpVel += UpdatedComponent->GetUpVector() * (Pawn->ShadowSneak ? 200 * FMath::Sqrt(Gravity * (JumpHeight + (Pawn->NormalHeight - Pawn->SneakHeight)/100)) : JumpSpeed);
+		JumpVel = UpdatedComponent->GetUpVector() * (Pawn->ShadowSneak ? 200 * FMath::Sqrt(Gravity * (JumpHeight + (Pawn->NormalHeight - Pawn->SneakHeight)/100)) : JumpSpeed);
 		StartJump = true;
 	}
 }
@@ -149,7 +146,6 @@ bool UCustomMovement::CheckStepUp(FVector movement) {
 	GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
 	//if there's nothing taller than the step, cast downward to the ground level to see if we actually want to step up.
 	if (!Hit.bBlockingHit) {
-		//GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::White, "Can step up");
 		Start = End;
 		End = Start - Capsule->GetUpVector() * (StepHeight - 1);
 		//DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 1, 0, 1);
@@ -202,9 +198,6 @@ bool UCustomMovement::CheckEndJump() {
 		FHitResult Hit;
 		Params.AddIgnoredActor(UpdatedComponent->GetOwner());
 		bool IsHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
-		//GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, FString::SanitizeFloat(GroundNum));
-		//GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Yellow, Stepping ? "stepping" : "not stepping");
-		//GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, IsHit ? "linecast hit" : "linecast didn't hit");
 		return GroundNum > 0 || Hit.bBlockingHit;
 	}
 	return false;
