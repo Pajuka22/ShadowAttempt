@@ -22,7 +22,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	{
 		return;
 	}
-	SetSpeed();
+	if(CheckGrounded()) SetSpeed();
 	if (GroundNum == 0) {
 		if (StartJump) {
 			StartJump = false;

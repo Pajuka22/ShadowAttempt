@@ -94,28 +94,27 @@ void APlayerPawn::Tick(float DeltaTime)
 
 		//find new up vector, avoiding overrotation.
 		FVector newUp = GetActorUpVector().RotateAngleAxis(FMath::Clamp(MaxRotateSpeed * DeltaTime, 0.0f, GetActorUpVector().RadiansToVector(tmpDesiredUp) * 180 / PI), CP);
-		//FVector newUp = GetActorUpVector().RotateAngleAxis(MaxRotateSpeed * DeltaTime, CP);
-		FVector newForward = RootComponent->GetRightVector() ^ newUp;
-		FVector newRight = newUp ^ newForward;
-		//construct a quat to rotate player to.
+		//default newforward so that I can calculate new right.
+		FVector newForward = GetActorForwardVector();
+		//default new right doesn't preserve look direction
+		FVector newRight = newRight = newUp ^ newForward;
+		//if perserving the look direction wouldn't turn the player more than 90 degrees, calculate new right to preserve the look rotation
+		if ((newUp ^ camForward).DistanceInDirection(GetActorRightVector()) > 0) newRight = newUp ^ camForward;
+		//recalculate new forward
+		newForward = newUp ^ newRight;
+		//construct a quat from these vectors and rotate the player.
 		FQuat q = FTransform(newForward, newRight, newUp, GetActorLocation()).GetRotation();
-		//store actual angle rotated to reference when I rotate the camera.
-		float angle = q.AngularDistance(GetActorQuat());
-		RootComponent->SetWorldRotation(q);
+		SetActorRotation(q);
 
-		//desired look direction
+		//if preserving the look direction would turn the player around, 
+		float camLerp = camForward.DistanceInDirection(GetActorForwardVector()) > 0 ? CamSneakInfluence : 1;
 
-		//up direction. keep in mind that looking side to side rotates the entire player, so cam forward and actor right will always be perpendicular.
 		if (!FVector::Coincident(MyCamera->GetForwardVector(), camForward)) {
+			//i'm using new up for the new camera up here.
 			newUp = camForward ^ GetActorRightVector();
 			q = FTransform(camForward, GetActorRightVector(), newUp, MyCamera->GetComponentLocation()).GetRotation();
 			//see how much influence we want to give the rotation of the actor on the direction the camera is looking. This depends on the angle between the look direction and CP.
 			//if player is looking almost all the way up or almost all the way down, it has full influence
-			float camLerp = FMath::Cos(CP.RadiansToVector(camForward - DesiredUp * camForward.DistanceInDirection(tmpDesiredUp)));
-			camLerp = CamSneakInfluence;
-			if (camForward.DistanceInDirection(GetActorForwardVector()) <= 0) {
-				camLerp = 0;
-			}
 			MyCamera->SetWorldRotation(FQuat::Slerp(q, MyCamera->GetComponentQuat(), FMath::Abs(camLerp)));
 		}
 	}
