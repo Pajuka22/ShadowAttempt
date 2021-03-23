@@ -58,6 +58,8 @@ public:
 	/*How much of an incfluence should tilting in shadow sneak have on look direction?*/
 	UPROPERTY(EditAnywhere, Category = "Camera|Camera Motion|Shadow Sneak", meta = (ClampMin = "0", ClampMax = "1"))
 		float CamSneakInfluence = 0;
+	UPROPERTY(EditAnywhere, Category = "Camera|Camera Motion|Shadow Sneak", meta = (ClampMin = "0"))
+		float SneakTraceDistance = 55;
 	/*Adds some buffer to dropping off of a wall if not grounded in shadow mode*/
 	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
 		int ShadowDropTime = 3;

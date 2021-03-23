@@ -91,7 +91,10 @@ void APlayerPawn::Tick(float DeltaTime)
 		//CP stands for cross product here.
 		FVector CP = GetActorUpVector() ^ tmpDesiredUp;
 		CP.Normalize();
-
+		FHitResult outHit;
+		FCollisionQueryParams params;
+		params.AddIgnoredActor(this);
+		GetWorld()->LineTraceSingleByChannel(outHit, MyCamera->GetComponentLocation(), MyCamera->GetComponentLocation() + camForward * SneakTraceDistance, ECC_EngineTraceChannel2, params);
 		//find new up vector, avoiding overrotation.
 		FVector newUp = GetActorUpVector().RotateAngleAxis(FMath::Clamp(MaxRotateSpeed * DeltaTime, 0.0f, GetActorUpVector().RadiansToVector(tmpDesiredUp) * 180 / PI), CP);
 		//default newforward so that I can calculate new right.
@@ -99,7 +102,10 @@ void APlayerPawn::Tick(float DeltaTime)
 		//default new right doesn't preserve look direction
 		FVector newRight = newRight = newUp ^ newForward;
 		//if perserving the look direction wouldn't turn the player more than 90 degrees, calculate new right to preserve the look rotation
-		if ((newUp ^ camForward).DistanceInDirection(GetActorRightVector()) > 0) newRight = newUp ^ camForward;
+		if ((newUp ^ camForward).DistanceInDirection(GetActorRightVector()) > 0 && (!outHit.bBlockingHit || newUp.DistanceInDirection(newForward) > 0)) {
+			newRight = newUp ^ camForward;
+			GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, "using cam forward for cross product");
+		}
 		//recalculate new forward
 		newForward = newUp ^ newRight;
 		//construct a quat from these vectors and rotate the player.
@@ -107,8 +113,9 @@ void APlayerPawn::Tick(float DeltaTime)
 		SetActorRotation(q);
 
 		//if preserving the look direction would turn the player around, 
-		float camLerp = camForward.DistanceInDirection(GetActorForwardVector()) > 0 ? CamSneakInfluence : 1;
-
+		float camLerp = (camForward.DistanceInDirection(GetActorForwardVector()) > 0 && (!outHit.bBlockingHit || newUp.DistanceInDirection(newForward) > 0))? CamSneakInfluence : 1;
+		
+		//if (outHit.bBlockingHit) camLerp = 1;
 		if (!FVector::Coincident(MyCamera->GetForwardVector(), camForward)) {
 			//i'm using new up for the new camera up here.
 			newUp = camForward ^ GetActorRightVector();

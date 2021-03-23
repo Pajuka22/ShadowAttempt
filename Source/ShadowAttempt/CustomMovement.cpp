@@ -65,24 +65,6 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 			SlideAlongSurface(DesiredMovementThisFrame, 1.f - outHit.Time, outHit.Normal, outHit);
 		}
 	}
-
-	//comment this if statement out if it doesn't work. chances are it won't, and it's fine as is.
-	/*if (MoveType == MovementType::Sneak) {
-		
-		FCollisionQueryParams params;
-		params.AddIgnoredActor(UpdatedComponent->GetOwner());
-		FVector Start = UpdatedComponent->GetComponentLocation() + LateralVel * (Capsule->GetScaledCapsuleRadius() / LateralVel.Size());
-		FVector End = Start + LateralVel * DeltaTime;
-		GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_Visibility, params);
-		if (outHit.bBlockingHit) {
-			if (UpdatedComponent->GetUpVector().RadiansToVector(outHit.ImpactNormal) <= ShadowMaxAngle * PI / 180) {
-				Pawn->FloorNormal = outHit.ImpactNormal;
-				Pawn->bMovementOverrideFloorNormal = true;
-			}
-			GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Emerald, "i feel like i've come up against a wall and i can't see behind it.");
-			DrawDebugLine(GetWorld(), Start, End, FColor::Purple);
-		}
-	}*/
 	//accelerate if it's not actually touching the ground. linecasts don't count.
 	if (GroundNum == 0) {
 		DownVel += (MoveType == MovementType::Sneak ? Pawn->FloorNormal : FVector::UpVector) * -Gravity * DeltaTime * 200;
