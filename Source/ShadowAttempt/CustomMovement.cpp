@@ -22,7 +22,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	{
 		return;
 	}
-	if(CheckGrounded()) SetSpeed();
+	if (GroundNum > 0 && !StartJump) SetSpeed();
 	if (GroundNum == 0) {
 		if (StartJump) {
 			StartJump = false;
@@ -33,6 +33,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 		StartJump = EndJump = false;
 		JumpVel = FVector::ZeroVector;
 	}
+	
 	//this is for the player pawn to reference. I can't guarantee what happens first, so CheckGrounded may not be what it's supposed to be when called from the pawn.
 	bGroundedCache = CheckGrounded();
 	
