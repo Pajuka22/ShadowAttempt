@@ -21,7 +21,7 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
-	/*FVector to set desired up to*/
+	/*FVector to set desired up to. defaults to actor's up vector*/
 	UPROPERTY(EditAnywhere)
 		FVector Normal = FVector::ZeroVector;
 	/*is it relative?*/

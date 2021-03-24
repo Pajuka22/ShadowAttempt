@@ -360,7 +360,7 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 					if (angle > MovementComp->MaxAngle * PI / 180 ? !IsStepUp(thisUnder, ThisNorm) : true) {
 						FloorNormal = ThisNorm;
 						FloorNormal.Normalize();
-						MovementComp->DownVel = -FloorNormal * 1000;
+						if(Grounded == 1) MovementComp->DownVel = -FloorNormal * 300;
 						if (SweepResult.GetActor() != NULL ? SweepResult.GetActor()->FindComponentByClass<USneakIgnore>() == NULL : true) {
 							DesiredUp = FloorNormal;
 						}
@@ -373,7 +373,7 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 						FloorNormal = ThisNorm;
 						FloorNormal.Normalize();
 					}
-					MovementComp->DownVel = -FloorNormal * 300;
+					if(Grounded == 1) MovementComp->DownVel = -FloorNormal * 300;
 					DesiredUp = n;
 				}
 			}
