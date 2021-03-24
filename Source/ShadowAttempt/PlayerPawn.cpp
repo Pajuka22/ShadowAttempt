@@ -14,6 +14,7 @@
 #include "Runtime/Core/Public/Math/TransformNonVectorized.h"
 #include "Runtime/Engine/Classes/Curves/CurveVector.h"
 #include "Stairs.h"
+#include "SneakOverride.h"
 #include "SneakIgnore.h"
 #include "PlayerVisibility.h"
 
@@ -191,13 +192,13 @@ void APlayerPawn::MoveRight(float val) {
 	}
 }
 void APlayerPawn::TurnAtRate(float rate) {
-	FVector newRight = RootComponent->GetRightVector().RotateAngleAxis(5 * rate, RootComponent->GetUpVector());
-	FVector newForward = RootComponent->GetForwardVector().RotateAngleAxis(5 * rate, RootComponent->GetUpVector());
+	FVector newRight = RootComponent->GetRightVector().RotateAngleAxis(rate, RootComponent->GetUpVector());
+	FVector newForward = RootComponent->GetForwardVector().RotateAngleAxis(rate, RootComponent->GetUpVector());
 	RootComponent->SetWorldTransform(FTransform(newForward, newRight, RootComponent->GetUpVector(), GetActorLocation()));
 }
 void APlayerPawn::LookUpAtRate(float rate) {
 	//MyCamera->SetRelativeRotation(MyCamera->RelativeRotation + FRotator(-rate, 0, 0));
-	float addrot = 5 * rate;
+	float addrot = rate;
 	FRotator rot = MyCamera->GetRelativeRotation() + FRotator(-addrot, 0, 0);
 	rot = FRotator(FMath::Clamp(rot.Pitch, -90.0f, 90.0f), rot.Yaw, rot.Roll);
 	MyCamera->SetRelativeRotation(rot.Quaternion());
@@ -355,13 +356,25 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 				if (!FVector::Coincident(FloorNormal, ThisNorm)) {
 					OldNormal = FloorNormal;
 				}
-				if (angle > MovementComp->MaxAngle * PI / 180 ? !IsStepUp(thisUnder, ThisNorm) : true) {
-					FloorNormal = ThisNorm;
-					FloorNormal.Normalize();
-					MovementComp->DownVel = -FloorNormal * 300;
-					if (SweepResult.GetActor() != NULL ? SweepResult.GetActor()->FindComponentByClass<USneakIgnore>() == NULL : true) {
-						DesiredUp = FloorNormal;
+				if (SweepResult.GetActor() == NULL || SweepResult.GetActor()->FindComponentByClass<USneakOverride>() == NULL) {
+					if (angle > MovementComp->MaxAngle * PI / 180 ? !IsStepUp(thisUnder, ThisNorm) : true) {
+						FloorNormal = ThisNorm;
+						FloorNormal.Normalize();
+						MovementComp->DownVel = -FloorNormal * 1000;
+						if (SweepResult.GetActor() != NULL ? SweepResult.GetActor()->FindComponentByClass<USneakIgnore>() == NULL : true) {
+							DesiredUp = FloorNormal;
+						}
 					}
+				}
+				else {
+					GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, "Has Sneak Override");
+					FVector n = SweepResult.GetActor()->FindComponentByClass<USneakOverride>()->Normal;
+					if (n.RadiansToVector(ThisNorm) < MovementComp->MaxAngle * PI / 180) {
+						FloorNormal = ThisNorm;
+						FloorNormal.Normalize();
+					}
+					MovementComp->DownVel = -FloorNormal * 300;
+					DesiredUp = n;
 				}
 			}
 		}

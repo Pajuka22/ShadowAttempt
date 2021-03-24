@@ -12,6 +12,8 @@ void UCustomMovement::BeginPlay() {
 	StartJump = false;
 	//i've written this out this way to make it more readable. multiplying both jump height and gravity by 100 because m to cm, 4 because of the way quadratic functions are
 	JumpSpeed = FMath::Sqrt(100 * JumpHeight * 4 * 100 * Gravity);
+	MovementSpeed = NormalSpeed;
+	MoveType = MovementType::Walk;
 }
 
 void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -23,6 +25,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 		return;
 	}
 	if (GroundNum > 0 && !StartJump) SetSpeed();
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Purple, FString::SanitizeFloat(MovementSpeed));
 	if (GroundNum == 0) {
 		if (StartJump) {
 			StartJump = false;
