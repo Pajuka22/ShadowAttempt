@@ -52,13 +52,14 @@ void APlayerPawn::BeginPlay()
 	startHeight = Capsule->GetScaledCapsuleHalfHeight();
 	currentHeight = startHeight;
 	endHeight = NormalHeight;
+	DesiredUp = FVector::UpVector;
 }
 
 // Called every frame
 void APlayerPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Emerald, MyVis.ToString());
+	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Emerald, MyVis.ToString());
 	MovementComp->GroundNum = Grounded;
 	//if it's not grounded
 	if (!CheckGrounded() && !MovementComp->bGroundedCache) {
@@ -74,9 +75,7 @@ void APlayerPawn::Tick(float DeltaTime)
 		//reset timer if it's grounded
 		notGroundedTime = 0;
 	}
-	//reset grounded and floor angle
-	Grounded = 0;
-	FloorAngle = PI / 2;
+	
 
 	if (bBufferSprint) {
 		Sprint();
@@ -105,7 +104,7 @@ void APlayerPawn::Tick(float DeltaTime)
 		//if perserving the look direction wouldn't turn the player more than 90 degrees, calculate new right to preserve the look rotation
 		if ((newUp ^ camForward).DistanceInDirection(GetActorRightVector()) > 0 && (!outHit.bBlockingHit || newUp.DistanceInDirection(newForward) > 0)) {
 			newRight = newUp ^ camForward;
-			GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, "using cam forward for cross product");
+			//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, "using cam forward for cross product");
 		}
 		//recalculate new forward
 		newForward = newUp ^ newRight;
@@ -157,7 +156,11 @@ void APlayerPawn::Tick(float DeltaTime)
 		RootComponent = Capsule;
 		MyCamera->SetRelativeLocation(FVector(0, 0, BaseEyeHeight / 100 * currentHeight));
 	}
+	//reset grounded, floor angle, and Under
+	Grounded = 0;
+	FloorAngle = PI / 2;
 	Under = GetActorLocation();
+	UnderDist = 1;
 }
 
 // Called to bind functionality to input
@@ -323,7 +326,7 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 {
 	UCapsuleComponent* cap = Cast<UCapsuleComponent>(HitComponent);
 	if (cap) {
-		if (HittingBottom(SweepResult.ImpactPoint, 90, true)){//(SweepResult.ImpactPoint - GetActorLocation()).DistanceInDirection(RootComponent->GetUpVector()) >= cap->GetScaledCapsuleHalfHeight_WithoutHemisphere()) {
+		if (HittingBottom(SweepResult.ImpactPoint, MovementComp->MaxAngle, true)){//(SweepResult.ImpactPoint - GetActorLocation()).DistanceInDirection(RootComponent->GetUpVector()) >= cap->GetScaledCapsuleHalfHeight_WithoutHemisphere()) {
 			if (!(MovementComp->StartJump || MovementComp->EndJump) && addHeight > 0) {
 				if (currentHeight > CrouchHeight) {
 					Crouch();
@@ -346,9 +349,8 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 			Grounded++;
 			
 			//MovementComp->GroundNum = Grounded;
-			MovementComp->DownVel = -FloorNormal * 30;
 			//ThisNorm.RadiansToVector(GetActorUpVector()) <= MovementComp->MaxAngle * PI / 180 && 
-			if (((angle < FloorAngle && (MovementComp->LateralVel.IsNearlyZero() || Grounded == 1))||
+			/*if (((angle < FloorAngle && (MovementComp->LateralVel.IsNearlyZero() || Grounded == 1))||
 				(thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel) >= (Under - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel))
 				&& angle <= ((ShadowSneak ? MovementComp->SneakMaxAngle : MovementComp->MaxAngle) + 1) * PI / 180) {
 				Under = thisUnder;
@@ -369,14 +371,66 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 				else {
 					GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, "Has Sneak Override");
 					FVector n = SweepResult.GetActor()->FindComponentByClass<USneakOverride>()->Normal;
+					//bool backSide = (SweepResult.GetActor()->FindComponentByClass<USneakOverride>()->BothSides && (-n).RadiansToVector(ThisNorm) < MovementComp->MaxAngle * PI / 180);
+					//if (backSide) n *= -1;
 					if (n.RadiansToVector(ThisNorm) < MovementComp->MaxAngle * PI / 180) {
 						FloorNormal = ThisNorm;
 						FloorNormal.Normalize();
 					}
 					if(Grounded == 1) MovementComp->DownVel = -FloorNormal * 300;
+					
 					DesiredUp = n;
+					
+				}
+			}*/
+
+			//starting the rework
+			if (ShadowSneak) {
+				bool fartherInDirection = ((thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel)) > UnderDist;
+				GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Green, FString::FromInt(Grounded));
+				GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, FString::SanitizeFloat((thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel)));
+				//GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::White, MovementComp->LateralVel.ToString());
+				
+				if ((angle < FloorAngle && (MovementComp->LateralVel.IsNearlyZero() || Grounded == 1) ||
+					(fartherInDirection /*&& ThisNorm.RadiansToVector(MovementComp->LateralVel) >= 2 * PI / 3*/))
+					&& angle <= (MovementComp->SneakMaxAngle + 1) * PI / 180) {
+					Under = thisUnder;
+					UnderDist = ((thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel));
+					FloorAngle = angle;
+					if (SweepResult.GetActor() == NULL || SweepResult.GetActor()->FindComponentByClass<USneakOverride>() == NULL) {
+						if (!IsStepUp(thisUnder, ThisNorm)) {
+							FloorNormal = ThisNorm;
+							FloorNormal.Normalize();
+							if (Grounded == 1) MovementComp->DownVel = -FloorNormal * 300;
+							if (SweepResult.GetActor() != NULL ? SweepResult.GetActor()->FindComponentByClass<USneakIgnore>() == NULL : true) {
+								DesiredUp = FloorNormal;
+							}
+						}
+					}
+					else {
+						//GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, "Has Sneak Override");
+						FVector n = SweepResult.GetActor()->FindComponentByClass<USneakOverride>()->Normal;
+						bool backSide = (SweepResult.GetActor()->FindComponentByClass<USneakOverride>()->BothSides && (-n).RadiansToVector(ThisNorm) < MovementComp->MaxAngle * PI / 180);
+						if (backSide) n *= -1;
+						if (n.RadiansToVector(ThisNorm) < MovementComp->MaxAngle * PI / 180) {
+							FloorNormal = ThisNorm;
+							FloorNormal.Normalize();
+						}
+						if(n.RadiansToVector(ThisNorm) <= SweepResult.GetActor()->FindComponentByClass<USneakOverride>()->tolerance) DesiredUp = n;
+						if (Grounded == 1) MovementComp->DownVel = -FloorNormal * 300;
+					}
 				}
 			}
+			else {
+				if (angle < FloorAngle && angle <= MovementComp->MaxAngle * 180 / PI) {
+					FloorAngle = angle;
+					Under = thisUnder;
+					FloorNormal = ThisNorm;
+					DesiredUp = FVector::UpVector;
+					if (Grounded == 1) MovementComp->DownVel = FVector::ZeroVector;
+				}
+			}
+			MovementComp->DownVel = -FloorNormal * (MovementComp->CheckStepUp(MovementComp->LateralVel * 1/60) ? 30 : 300);
 		}
 	}
 }
@@ -501,7 +555,7 @@ PlayerVisibility APlayerPawn::SStealth(FVector location, float inner, float oute
 				}
 			}
 		}
-		GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, FString::SanitizeFloat(mult));
+		//GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, FString::SanitizeFloat(mult));
 		return PlayerVisibility(mult / 6 * (2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000) / FMath::Pow((GetActorLocation() - location).Size(), 2), g);
 	}
 	return PlayerVisibility(0, 0);
@@ -543,7 +597,7 @@ PlayerVisibility APlayerPawn::DStealth(FVector direction, float intensity, float
 			}
 		}
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, FString::FromInt(mult));
+	//GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, FString::FromInt(mult));
 	return PlayerVisibility(FMath::Square(mult/6 * intensity), g);
 }
 float APlayerPawn::GetCapsuleVisibleArea() {

@@ -26,7 +26,11 @@ public:
 		FVector Normal = FVector::ZeroVector;
 	/*is it relative?*/
 	UPROPERTY(EditAnywhere)
-		bool relative;
+		bool Relative;
+	UPROPERTY(EditAnywhere)
+		bool BothSides;
+	UPROPERTY(EditAnywhere, meta = (ClampMin = "0", ClampMax = "90"));
+		float tolerance = 90;
 	// Called every frame
 	//virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 

@@ -103,13 +103,14 @@ public:
 	/*max degrees per second when rotating player to desired up direction*/
 	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
 		float MaxRotateSpeed;
-	FVector Under;
 	UPROPERTY(EditAnywhere)
 		float MaxHP;
 
 	float CurrentHP;
 
 protected:
+	FVector Under;
+	float UnderDist = 0;
 	float CurveTime = 0;
 	float startHeight;
 	float endHeight;

@@ -19,8 +19,9 @@ void USneakOverride::BeginPlay()
 {
 	Super::BeginPlay();
 	if (Normal == FVector::ZeroVector) Normal = GetUpVector();
-	else if (relative) Normal = GetForwardVector() * Normal.X + GetRightVector() * Normal.Y + GetUpVector() * Normal.Z;
+	else if (Relative) Normal = GetForwardVector() * Normal.X + GetRightVector() * Normal.Y + GetUpVector() * Normal.Z;
 	Normal.Normalize();
+	tolerance *= PI / 180;
 	// ...
 	
 }

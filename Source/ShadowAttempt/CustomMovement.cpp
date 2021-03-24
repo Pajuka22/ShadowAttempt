@@ -25,7 +25,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 		return;
 	}
 	if (GroundNum > 0 && !StartJump) SetSpeed();
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Purple, FString::SanitizeFloat(MovementSpeed));
+	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Purple, FString::SanitizeFloat(MovementSpeed));
 	if (GroundNum == 0) {
 		if (StartJump) {
 			StartJump = false;
@@ -53,8 +53,8 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	}
 	//if they're stepping down and not stepping up (not necessarily mutually exclusive), double downward velocity.
 	if (CheckStepDown(LateralVel * DeltaTime) && !CheckStepUp(LateralVel * DeltaTime) && !StartJump && !EndJump) DownVel *= 2;
-	if (CheckStepUp(LateralVel * DeltaTime) && GroundNum >= 1) DownVel = Capsule->GetUpVector() * GetStepHeight(LateralVel * DeltaTime) * 10;
-	else if (GroundNum == 0) {
+	//if (CheckStepUp(LateralVel * DeltaTime) && GroundNum >= 1) DownVel = Capsule->GetUpVector() * GetStepHeight(LateralVel * DeltaTime) * 10;
+	if (GroundNum == 0) {
 		DownVel += (MoveType == MovementType::Sneak ? Pawn->FloorNormal : FVector::UpVector) * -Gravity * DeltaTime * 200;
 	}
 
