@@ -53,6 +53,10 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	}
 	//if they're stepping down and not stepping up (not necessarily mutually exclusive), double downward velocity.
 	if (CheckStepDown(LateralVel * DeltaTime) && !CheckStepUp(LateralVel * DeltaTime) && !StartJump && !EndJump) DownVel *= 2;
+	if (CheckStepUp(LateralVel * DeltaTime) && GroundNum >= 1) DownVel = Capsule->GetUpVector() * GetStepHeight(LateralVel * DeltaTime);
+	else if (GroundNum == 0) {
+		DownVel += (MoveType == MovementType::Sneak ? Pawn->FloorNormal : FVector::UpVector) * -Gravity * DeltaTime * 200;
+	}
 
 	FVector DesiredMovementThisFrame = (LateralVel + JumpVel + DownVel + HeightAdjustVel) * DeltaTime;
 
@@ -69,9 +73,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 		}
 	}
 	//accelerate if it's not actually touching the ground. linecasts don't count.
-	if (GroundNum == 0) {
-		DownVel += (MoveType == MovementType::Sneak ? Pawn->FloorNormal : FVector::UpVector) * -Gravity * DeltaTime * 200;
-	}
+	
 }
 void UCustomMovement::SetSpeed()
 {
@@ -162,6 +164,15 @@ bool UCustomMovement::CheckStepDown(FVector movement) {
 		return Hit.bBlockingHit && !StartJump;
 	}
 	return false;
+}
+float UCustomMovement::GetStepHeight(FVector movement) {
+	FHitResult outHit;
+	FCollisionQueryParams params;
+	params.AddIgnoredActor(GetPawnOwner());
+	FVector Start = GetActorLocation() - Capsule->GetUpVector() * (Capsule->GetScaledCapsuleHalfHeight() - StepHeight) + movement;
+	FVector End = Start - Capsule->GetUpVector() * StepHeight;
+	GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_EngineTraceChannel2, params);
+	return StepHeight - outHit.Distance;
 }
 bool UCustomMovement::CanJump() {
 	if (Capsule) {

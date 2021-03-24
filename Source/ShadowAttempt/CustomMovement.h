@@ -65,5 +65,6 @@ protected:
 	virtual void BeginPlay() override;
 	bool CheckStepUp(FVector movement);
 	bool CheckStepDown(FVector movement);
+	float GetStepHeight(FVector movement);
 	bool CheckEndJump();
 };
