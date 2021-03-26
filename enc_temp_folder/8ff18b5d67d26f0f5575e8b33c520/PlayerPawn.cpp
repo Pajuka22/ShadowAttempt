@@ -1,7 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PlayerPawn.h"
-#include "Kismet/GameplayStatics.h"
 #include "Components/InputComponent.h"
 #include "Runtime/HeadMountedDisplay/Public/MotionControllerComponent.h"
 #include "Camera/CameraComponent.h"
@@ -65,11 +64,10 @@ void APlayerPawn::Tick(float DeltaTime)
 	//if it's not grounded
 	if (!CheckGrounded() && !MovementComp->bGroundedCache) {
 		//if more than the allowed number of frames have passed since it stopped being grounded
-		if (notGroundedTime >= ShadowDropTime && ShadowSneak) {
+		if (notGroundedTime >= ShadowDropTime) {
 			//return to default up direction
-			EndSneak();
 			FloorNormal = FVector::UpVector;
-			//if (MovementComp->JumpVel.IsNearlyZero()) MovementComp->DownVel = FVector::ZeroVector;
+			if (ShadowSneak) StartEndSneak();
 		}
 		else ++notGroundedTime;
 	}
@@ -82,12 +80,7 @@ void APlayerPawn::Tick(float DeltaTime)
 	if (bBufferSprint) {
 		Sprint();
 	}
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Yellow, FString::FromInt(SneakBuffer));
-	if (SneakBuffer > 1) {
-		--SneakBuffer;
-		if (!ShadowSneak) StartSneak();
-	}
-	if (CheckGrounded()) SneakBuffer = -1;
+
 	//rotating the player
 	FVector tmpDesiredUp = ShadowSneak ? DesiredUp : FVector::UpVector;
 	if (!FVector::Coincident(tmpDesiredUp, GetActorUpVector())) {
@@ -135,10 +128,6 @@ void APlayerPawn::Tick(float DeltaTime)
 
 	//Setting movement speed
 	if (ShadowSneak) {
-		if (CheckGrounded() && endHeight != SneakHeight) {
-			startHeight = currentHeight;
-			endHeight = SneakHeight;
-		}
 		MovementComp->MoveType = UCustomMovement::MovementType::Sneak;
 	}
 	else {
@@ -168,7 +157,6 @@ void APlayerPawn::Tick(float DeltaTime)
 		MyCamera->SetRelativeLocation(FVector(0, 0, BaseEyeHeight / 100 * currentHeight));
 	}
 	//reset grounded, floor angle, and Under
-	OldGrounded = Grounded;
 	Grounded = 0;
 	FloorAngle = PI / 2;
 	Under = GetActorLocation();
@@ -189,7 +177,7 @@ void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &APlayerPawn::Sprint);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &APlayerPawn::StopSprinting);
 	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &APlayerPawn::CrouchControl);
-	PlayerInputComponent->BindAction("Reset", IE_Pressed, this, &APlayerPawn::ResetLevel);
+	PlayerInputComponent->BindAction("Reset", IE_Pressed, this, &APlayerPawn::ResetLevel());
 }
 UPawnMovementComponent* APlayerPawn::GetMovementComponent() const
 {
@@ -230,7 +218,7 @@ void APlayerPawn::LookUpAtRate(float rate) {
 
 void APlayerPawn::StartEndSneak()
 {
-	/*ShadowSneak = !ShadowSneak;
+	ShadowSneak = !ShadowSneak;
 	startHeight = currentHeight;
 	if (ShadowSneak) {
 		endHeight = SneakHeight;
@@ -238,38 +226,13 @@ void APlayerPawn::StartEndSneak()
 	else {
 		if (bCrouch) endHeight = CrouchHeight;
 		else endHeight = NormalHeight;
-	}*/
-	if (!ShadowSneak) {
-		StartSneak();
 	}
-	else {
-		EndSneak();
-	}
-}
-
-void APlayerPawn::StartSneak() {
-	if (CheckGrounded()) {
-		startHeight = currentHeight;
-		endHeight = SneakHeight;
-	}
-	else if (SneakBuffer < 0) SneakBuffer = MaxSneakBuffer;
-	ShadowSneak = true;
-}
-void APlayerPawn::EndSneak() {
-	ShadowSneak = false;
-	startHeight = currentHeight;
-	endHeight = bCrouch ? CrouchHeight : NormalHeight;
-	if (!CheckGrounded() && MovementComp->JumpVel.IsNearlyZero()) {
-		MovementComp->DownVel = FVector::ZeroVector;
-	}
-	FloorNormal = FVector::UpVector;
-	DesiredUp = FVector::UpVector;
 }
 
 void APlayerPawn::Jump()
 {
 	MovementComp->Jump();
-	if (ShadowSneak) EndSneak();
+	if (ShadowSneak) StartEndSneak();
 }
 
 void APlayerPawn::Sprint()
@@ -646,6 +609,5 @@ float APlayerPawn::GetCapsuleVisibleArea() {
 	return 0;
 }
 void APlayerPawn::ResetLevel() {
-	UGameplayStatics::OpenLevel(this,  FName(*GetWorld()->GetName()), false);
-	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Blue, "Reset level");
+	GetWorld()->SetCurrentLevel(GetWorld()->GetCurrentLevel());
 }

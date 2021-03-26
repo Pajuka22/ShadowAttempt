@@ -73,6 +73,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 		}
 	}
 	//accelerate if it's not actually touching the ground. linecasts don't count.
+	
 }
 void UCustomMovement::SetSpeed()
 {

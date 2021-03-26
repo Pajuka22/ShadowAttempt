@@ -98,17 +98,21 @@ public:
 	float GetCapsuleVisibleArea();
 
 	FVector FloorNormal;
-	FVector OldNormal;
+	//FVector OldNormal;
+	int OldGrounded = 0;
 	FVector DesiredUp;
 	/*max degrees per second when rotating player to desired up direction*/
 	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
 		float MaxRotateSpeed;
+	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
+		int MaxSneakBuffer = 30;
 	UPROPERTY(EditAnywhere)
 		float MaxHP;
 
 	float CurrentHP;
 
 protected:
+	int SneakBuffer = 0;
 	FVector Under;
 	float UnderDist = 0;
 	float CurveTime = 0;
@@ -123,6 +127,8 @@ protected:
 	void TurnAtRate(float Rate);
 	void LookUpAtRate(float Rate);
 	void StartEndSneak();
+	void StartSneak();
+	void EndSneak();
 	void Jump();
 	void StopJumping();
 
@@ -147,5 +153,6 @@ protected:
 		void RootCollisionExit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 	UFUNCTION()
 		void RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
-
+	UFUNCTION(BlueprintCallable)
+		void ResetLevel();
 };
