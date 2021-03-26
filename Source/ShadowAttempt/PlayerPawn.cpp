@@ -77,7 +77,6 @@ void APlayerPawn::Tick(float DeltaTime)
 		//reset timer if it's grounded
 		notGroundedTime = 0;
 	}
-	
 
 	if (bBufferSprint) {
 		Sprint();
@@ -253,6 +252,7 @@ void APlayerPawn::StartSneak() {
 		endHeight = SneakHeight;
 	}
 	else if (SneakBuffer < 0) SneakBuffer = MaxSneakBuffer;
+	notGroundedTime = 0;
 	ShadowSneak = true;
 }
 void APlayerPawn::EndSneak() {
@@ -364,6 +364,7 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 {
 	UCapsuleComponent* cap = Cast<UCapsuleComponent>(HitComponent);
 	if (cap) {
+		//hitting the top
 		if (HittingBottom(SweepResult.ImpactPoint, MovementComp->MaxAngle, true)){//(SweepResult.ImpactPoint - GetActorLocation()).DistanceInDirection(RootComponent->GetUpVector()) >= cap->GetScaledCapsuleHalfHeight_WithoutHemisphere()) {
 			if (!(MovementComp->StartJump || MovementComp->EndJump) && addHeight > 0) {
 				if (currentHeight > CrouchHeight) {
@@ -379,13 +380,16 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 				MovementComp->EndJump = true;
 			}
 		}
-		if (HittingBottom(SweepResult.ImpactPoint, (ShadowSneak ? MovementComp->SneakMaxAngle : MovementComp->MaxAngle) + 1)) {
+		//hitting the bottom
+		//if (HittingBottom(SweepResult.ImpactPoint, (ShadowSneak ? MovementComp->SneakMaxAngle : MovementComp->MaxAngle) + 1)) {
+		if(ShadowSneak ? (HittingBottom(SweepResult.ImpactPoint, MovementComp->SneakMaxAngle + 1) || HittingSides(SweepResult.ImpactPoint)) : 
+			HittingBottom(SweepResult.ImpactPoint, MovementComp->MaxAngle)){
 			FVector ThisNorm = SweepResult.ImpactNormal;
 			ThisNorm.Normalize();
 			FVector thisUnder = SweepResult.ImpactPoint;
 			float angle = ThisNorm.RadiansToVector(GetActorUpVector());
 			Grounded++;
-			
+			notGroundedTime = 0;
 			//MovementComp->GroundNum = Grounded;
 			//ThisNorm.RadiansToVector(GetActorUpVector()) <= MovementComp->MaxAngle * PI / 180 && 
 			/*if (((angle < FloorAngle && (MovementComp->LateralVel.IsNearlyZero() || Grounded == 1))||
@@ -436,7 +440,8 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 					UnderDist = ((thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel));
 					FloorAngle = angle;
 					if (SweepResult.GetActor() == NULL || SweepResult.GetActor()->FindComponentByClass<USneakOverride>() == NULL) {
-						if (!IsStepUp(thisUnder, ThisNorm)) {
+						GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Purple, HittingSides(thisUnder) ? "hitting side" : "not" );
+						if (!IsStepUp(thisUnder, ThisNorm) || HittingSides(thisUnder)) {
 							FloorNormal = ThisNorm;
 							FloorNormal.Normalize();
 							if (Grounded == 1) MovementComp->DownVel = -FloorNormal * 300;
@@ -479,6 +484,10 @@ bool APlayerPawn::HittingBottom(FVector hitPos, float maxDeg, bool top) {
 		return (hitPos - center).RadiansToVector(GetActorUpVector()) <= maxDeg * PI / 180;
 	}
 	return (center - hitPos).RadiansToVector(Capsule->GetUpVector()) <= maxDeg * PI / 180;
+}
+
+bool APlayerPawn::HittingSides(FVector hitPos) {
+	return abs((GetActorLocation() - hitPos).DistanceInDirection(GetActorUpVector())) <= Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere();
 }
 
 bool APlayerPawn::IsStepUp(FVector hitPos, FVector hitNormal) {

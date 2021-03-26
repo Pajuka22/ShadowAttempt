@@ -141,6 +141,7 @@ protected:
 	void GetAddHeight();
 
 	bool HittingBottom(FVector hitPos, float maxDeg = 90, bool top = false);
+	bool HittingSides(FVector hitpos);
 	bool IsStepUp(FVector hitPos, FVector hitNormal);
 
 	float FloorAngle = 60;
