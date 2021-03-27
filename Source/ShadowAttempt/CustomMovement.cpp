@@ -53,13 +53,12 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	}
 	//if they're stepping down and not stepping up (not necessarily mutually exclusive), double downward velocity.
 	if (CheckStepDown(LateralVel * DeltaTime) && !CheckStepUp(LateralVel * DeltaTime) && !StartJump && !EndJump) DownVel *= 2;
-	//if (CheckStepUp(LateralVel * DeltaTime) && GroundNum >= 1) DownVel = Capsule->GetUpVector() * GetStepHeight(LateralVel * DeltaTime) * 60;
-	//accelerate if it's not actually touching the ground. linecasts don't count.
+	//if (CheckStepUp(LateralVel * DeltaTime) && GroundNum >= 1) DownVel = Capsule->GetUpVector() * GetStepHeight(LateralVel * DeltaTime) * 10;
 	if (GroundNum == 0) {
 		DownVel += (MoveType == MovementType::Sneak ? Pawn->FloorNormal : FVector::UpVector) * -Gravity * DeltaTime * 200;
 	}
 
-	FVector DesiredMovementThisFrame = (LateralVel + JumpVel + DownVel + HeightAdjustVel + SlopeDownVel) * DeltaTime;
+	FVector DesiredMovementThisFrame = (LateralVel + JumpVel + DownVel + HeightAdjustVel) * DeltaTime;
 
 	FHitResult outHit;
 	
@@ -73,29 +72,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 			SlideAlongSurface(DesiredMovementThisFrame, 1.f - outHit.Time, outHit.Normal, outHit);
 		}
 	}
-	//experimental
-	/*SlopeDownVel = FVector::ZeroVector;
-	if (GroundNum > 0 && !CheckStepUp(LateralVel * DeltaTime)) {
-		FCollisionQueryParams params;
-		params.AddIgnoredActor(GetOwner());
-		FVector Start = Pawn->GetActorLocation() - Capsule->GetUpVector() * (Capsule->GetScaledCapsuleHalfHeight()) + LateralVel * DeltaTime;
-		FVector End = Start - Capsule->GetUpVector() * LateralVel.Size() * DeltaTime / cos(MaxAngle * PI / 180) - LateralVel * DeltaTime;
-		GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_EngineTraceChannel2, params);
-		if (outHit.bBlockingHit && outHit.ImpactNormal.RadiansToVector(Pawn->DesiredUp) <= (MaxAngle + 1) * PI / 180
-			&& outHit.ImpactNormal.RadiansToVector(Pawn->DesiredUp) > 0
-			&& (outHit.ImpactPoint - Start).Size() > 0) {
-			SlopeDownVel = -outHit.ImpactNormal * 30;
-			//Start += LateralVel * DeltaTime;
-			/*FVector tmp = outHit.ImpactNormal;
-			End = Start - outHit.ImpactNormal * LateralVel.Size() * DeltaTime / cos(MaxAngle * PI / 180);
-			GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_EngineTraceChannel2, params);
-			if (outHit.bBlockingHit && MoveType == MovementType::Sneak) {
-				Pawn->SetActorLocation(outHit.ImpactPoint + Capsule->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight());
-				Pawn->FloorNormal = tmp;
-				if (Pawn->ShadowSneak) Pawn->DesiredUp = outHit.ImpactNormal;
-			}
-		}
-	}*/
+	//accelerate if it's not actually touching the ground. linecasts don't count.
 }
 void UCustomMovement::SetSpeed()
 {
@@ -133,7 +110,7 @@ bool UCustomMovement::CheckGrounded() {
 		FHitResult Hit;
 		Params.AddIgnoredActor(UpdatedComponent->GetOwner());
 		bool IsHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
-		return Pawn->Grounded > 0 || GroundNum > 0 || Stepping || Hit.bBlockingHit || CheckStepDown(LateralVel / 60) || CheckStepUp(LateralVel / 60);
+		return GroundNum > 0 || Stepping || Hit.bBlockingHit || CheckStepDown(LateralVel / 60) || CheckStepUp(LateralVel / 60);
 	}
 	return false;
 }
@@ -147,7 +124,7 @@ bool UCustomMovement::CheckStepUp(FVector movement) {
 
 	//we want to check the outside of the capsule, so we need to know how far from the vertical axis we need to linecast from.
 	float radius = (FMath::Pow(Capsule->GetScaledCapsuleRadius(), 2) - StepHeight);
-	radius = FMath::Sqrt(radius);
+	if (radius >= 0) radius = FMath::Sqrt(radius);
 	movement += movement / movement.Size() * radius;
 	//set start and end of linecast
 	FVector Start = GetActorLocation() - Capsule->GetUpVector() * (Capsule->GetScaledCapsuleHalfHeight() - StepHeight);
@@ -157,7 +134,7 @@ bool UCustomMovement::CheckStepUp(FVector movement) {
 	//if there's nothing taller than the step, cast downward to the ground level to see if we actually want to step up.
 	if (!Hit.bBlockingHit) {
 		Start = End;
-		End = Start - Capsule->GetUpVector() * (StepHeight - 5);
+		End = Start - Capsule->GetUpVector() * (StepHeight - 1);
 		//DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 1, 0, 1);
 		GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
 		

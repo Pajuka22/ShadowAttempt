@@ -18,7 +18,7 @@ class SHADOWATTEMPT_API UCustomMovement : public UPawnMovementComponent
 public:
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	UPROPERTY(EditAnywhere)
-		float StepHeight = 30;
+		float StepHeight;
 	/*Max slope player can walk up/down.*/
 	UPROPERTY(EditAnywhere)
 		float MaxAngle = 50;
@@ -32,29 +32,29 @@ public:
 	FVector HeightAdjustVel = FVector::ZeroVector;
 	FVector CurrentLatVel;
 	UPROPERTY(EditAnywhere, Category = "Movement Speed")
-		float SneakSpeed = 600;
+		float SneakSpeed = 200;
 	UPROPERTY(EditAnywhere, Category = "Movement Speed")
 		float CrouchSpeed = 300;
 	UPROPERTY(EditAnywhere, Category = "Movement Speed")
-		float NormalSpeed = 400;
+		float NormalSpeed = 300;
 	UPROPERTY(EditAnywhere, Category = "Movement Speed")
-		float SprintSpeed = 750;
+		float SprintSpeed = 600;
 	float MovementSpeed;
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0"));
-		float JumpHeight = 2;
+		float JumpHeight;
 	UPROPERTY(EditAnywhere)
 		float Gravity = 9.81;
 	bool Shadow;
-	float JumpSpeed;
+	float JumpSpeed = 800;
 	enum MovementType{Walk, Sprint, Crouch, Sneak};
 	MovementType MoveType;
 	void SetSpeed();
 	void Jump();
 	bool CheckGrounded();
 	bool CanJump();
-	bool Stepping = false;
-	bool StartJump = false;
-	bool EndJump = false;
+	bool Stepping;
+	bool StartJump;
+	bool EndJump;
 	class APlayerPawn* Pawn;
 	int GroundNum = 0;
 	UCapsuleComponent* Capsule;
@@ -64,10 +64,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
+	
 	bool CheckStepDown(FVector movement);
 	float GetStepHeight(FVector movement);
 	bool CheckEndJump();
-	
-	FVector SlopeDownVel;
 };
