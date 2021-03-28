@@ -80,11 +80,11 @@ void APlayerPawn::Tick(float DeltaTime)
 				if (outHit.Actor->FindComponentByClass<USneakOverride>() != NULL) {
 					DesiredUp = outHit.Actor->FindComponentByClass<USneakOverride>()->Normal;
 				}
+				FloorNormal = outHit.ImpactNormal;
 				MovementComp->DownVel = -outHit.ImpactNormal * 300;
-				/*End = Start - outHit.ImpactNormal * MovementComp->MovementSpeed * tan(MovementComp->MaxAngle * PI / 180) * DeltaTime * (ShadowDropTime - notGroundedTime);
-				GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_EngineTraceChannel2, params);
-				if(outHit.bBlockingHit) SetActorLocation(outHit.ImpactPoint + outHit.ImpactNormal * Capsule->GetScaledCapsuleRadius());
-				*/
+				//End = Start - outHit.ImpactNormal * MovementComp->MovementSpeed * tan(MovementComp->MaxAngle * PI / 180) * DeltaTime * (ShadowDropTime - notGroundedTime);
+				//GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_EngineTraceChannel2, params);
+				//if(outHit.bBlockingHit) SetActorLocation(outHit.ImpactPoint + outHit.ImpactNormal * Capsule->GetScaledCapsuleRadius());
 			}
 			else DesiredUp = outHit.ImpactNormal;
 		}
