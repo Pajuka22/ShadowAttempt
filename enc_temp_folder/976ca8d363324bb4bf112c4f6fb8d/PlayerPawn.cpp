@@ -63,34 +63,16 @@ void APlayerPawn::Tick(float DeltaTime)
 	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Emerald, MyVis.ToString());
 	MovementComp->GroundNum = Grounded;
 	//if it's not grounded
-	
-	if (!Grounded && MovementComp->JumpVel.IsNearlyZero()) {
-		
-		FHitResult outHit;
-		FCollisionQueryParams params;
-		params.AddIgnoredActor(this);
-		FVector Start = GetActorLocation() - (GetActorUpVector()) * Capsule->GetScaledCapsuleHalfHeight();
-		FVector End = Start - FloorNormal * MovementComp->MovementSpeed * tan(MovementComp->MaxAngle * PI / 180) * DeltaTime * (ShadowDropTime - notGroundedTime);
+	FHitResult outHit;
+	FCollisionQueryParams params;
+	params.AddIgnoredActor(this);
+	FVector Start = GetActorLocation() - GetActorUpVector() * Capsule->GetScaledCapsuleHalfHeight();
+	FVector End = Start - FloorNormal * MovementComp->MovementSpeed * tan(MovementComp->MaxAngle) * (ShadowDropTime - notGroundedTime);
 
-		GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_EngineTraceChannel2, params);
-
-		if (outHit.bBlockingHit) {
-			GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Purple, outHit.Actor != NULL ? outHit.Actor->GetName() : "hit non-actor");
-			if (outHit.Actor != NULL) {
-				if (outHit.Actor->FindComponentByClass<USneakOverride>() != NULL) {
-					DesiredUp = outHit.Actor->FindComponentByClass<USneakOverride>()->Normal;
-				}
-				MovementComp->DownVel = -outHit.ImpactNormal * 300;
-				/*End = Start - outHit.ImpactNormal * MovementComp->MovementSpeed * tan(MovementComp->MaxAngle * PI / 180) * DeltaTime * (ShadowDropTime - notGroundedTime);
-				GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_EngineTraceChannel2, params);
-				if(outHit.bBlockingHit) SetActorLocation(outHit.ImpactPoint + outHit.ImpactNormal * Capsule->GetScaledCapsuleRadius());
-				*/
-			}
-			else DesiredUp = outHit.ImpactNormal;
-		}
-		else if (notGroundedTime == 0) {
-			MovementComp->DownVel = FVector::ZeroVector;
-		}
+	GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_Visibility, params);
+	if (outHit.bBlockingHit) {
+		GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Purple, outHit.Actor == NULL ? outHit.Actor->GetName() : "hit non-actor");
+		//MovementComp->DownVel = FVector::ZeroVector;
 	}
 	if (!CheckGrounded() && !MovementComp->bGroundedCache) {
 		
@@ -128,9 +110,9 @@ void APlayerPawn::Tick(float DeltaTime)
 		//CP stands for cross product here.
 		FVector CP = GetActorUpVector() ^ tmpDesiredUp;
 		CP.Normalize();
-		FHitResult outHit;
-		FCollisionQueryParams params;
-		params.AddIgnoredActor(this);
+		//FHitResult outHit;
+		//FCollisionQueryParams params;
+		//params.AddIgnoredActor(this);
 		GetWorld()->LineTraceSingleByChannel(outHit, MyCamera->GetComponentLocation(), MyCamera->GetComponentLocation() + camForward * SneakTraceDistance, ECC_EngineTraceChannel2, params);
 		//find new up vector, avoiding overrotation.
 		FVector newUp = GetActorUpVector().RotateAngleAxis(FMath::Clamp(MaxRotateSpeed * DeltaTime, 0.0f, GetActorUpVector().RadiansToVector(tmpDesiredUp) * 180 / PI), CP);
