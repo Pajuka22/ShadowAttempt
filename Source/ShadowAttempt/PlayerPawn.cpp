@@ -17,6 +17,7 @@
 #include "Stairs.h"
 #include "SneakOverride.h"
 #include "SneakIgnore.h"
+#include "SneakCamOverride.h"
 #include "PlayerVisibility.h"
 
 // Sets default values
@@ -203,6 +204,7 @@ void APlayerPawn::Tick(float DeltaTime)
 	FloorAngle = PI / 2;
 	Under = GetActorLocation();
 	UnderDist = 1;
+	CamSneakInfluence = DefaultCamSneakInfluence;
 }
 
 // Called to bind functionality to input
@@ -470,7 +472,7 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 					Under = thisUnder;
 					UnderDist = ((thisUnder - GetActorLocation()).DistanceInDirection(MovementComp->LateralVel));
 					FloorAngle = angle;
-					if (SweepResult.GetActor() == NULL || SweepResult.GetActor()->FindComponentByClass<USneakOverride>() == NULL) {
+					/*if (SweepResult.GetActor() == NULL || SweepResult.GetActor()->FindComponentByClass<USneakOverride>() == NULL) {
 						//GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Purple, HittingSides(thisUnder) ? "hitting side" : "not" );
 						if (!IsStepUp(thisUnder, ThisNorm) || HittingSides(thisUnder)) {
 							FloorNormal = ThisNorm;
@@ -492,6 +494,42 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 						}
 						if(n.RadiansToVector(ThisNorm) <= SweepResult.GetActor()->FindComponentByClass<USneakOverride>()->tolerance) DesiredUp = n;
 						if (Grounded == 1) MovementComp->DownVel = -FloorNormal * 300;
+					}*/
+					if (OtherActor != NULL) {
+						if (OtherActor->FindComponentByClass<USneakOverride>()) {
+							FVector n = SweepResult.GetActor()->FindComponentByClass<USneakOverride>()->Normal;
+							bool backSide = (SweepResult.GetActor()->FindComponentByClass<USneakOverride>()->BothSides && (-n).RadiansToVector(ThisNorm) < MovementComp->MaxAngle * PI / 180);
+							if (backSide) n *= -1;
+							if (n.RadiansToVector(ThisNorm) < MovementComp->MaxAngle * PI / 180) {
+								FloorNormal = ThisNorm;
+								FloorNormal.Normalize();
+							}
+							if (n.RadiansToVector(ThisNorm) <= SweepResult.GetActor()->FindComponentByClass<USneakOverride>()->tolerance) DesiredUp = n;
+							if (Grounded == 1) MovementComp->DownVel = -FloorNormal * 300;
+						}
+						else {
+							if (!IsStepUp(thisUnder, ThisNorm) || HittingSides(thisUnder)) {
+								FloorNormal = ThisNorm;
+								FloorNormal.Normalize();
+								if (Grounded == 1) MovementComp->DownVel = -FloorNormal * 300;
+								if (SweepResult.GetActor() != NULL ? SweepResult.GetActor()->FindComponentByClass<USneakIgnore>() == NULL : true) {
+									DesiredUp = FloorNormal;
+								}
+							}
+						}
+						if (OtherActor->FindComponentByClass<USneakCamOverride>()) {
+							CamSneakInfluence = OtherActor->FindComponentByClass<USneakCamOverride>()->Influence;
+						}
+					}
+					else {
+						if (!IsStepUp(thisUnder, ThisNorm) || HittingSides(thisUnder)) {
+							FloorNormal = ThisNorm;
+							FloorNormal.Normalize();
+							if (Grounded == 1) MovementComp->DownVel = -FloorNormal * 300;
+							if (SweepResult.GetActor() != NULL ? SweepResult.GetActor()->FindComponentByClass<USneakIgnore>() == NULL : true) {
+								DesiredUp = FloorNormal;
+							}
+						}
 					}
 				}
 			}
