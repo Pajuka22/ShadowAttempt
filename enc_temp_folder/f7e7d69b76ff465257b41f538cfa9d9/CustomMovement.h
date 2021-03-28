@@ -32,13 +32,13 @@ public:
 	FVector HeightAdjustVel = FVector::ZeroVector;
 	FVector CurrentLatVel;
 	UPROPERTY(EditAnywhere, Category = "Movement Speed")
-		float SneakSpeed = 600;
+		float SneakSpeed = 200;
 	UPROPERTY(EditAnywhere, Category = "Movement Speed")
 		float CrouchSpeed = 300;
 	UPROPERTY(EditAnywhere, Category = "Movement Speed")
-		float NormalSpeed = 400;
+		float NormalSpeed = 300;
 	UPROPERTY(EditAnywhere, Category = "Movement Speed")
-		float SprintSpeed = 750;
+		float SprintSpeed = 600;
 	float MovementSpeed;
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0"));
 		float JumpHeight = 2;

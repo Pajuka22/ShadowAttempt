@@ -31,7 +31,7 @@ APlayerPawn::APlayerPawn()
 	Capsule->SetCapsuleSize(NormalRadius, NormalHeight);
 	//Capsule->OnComponentBeginOverlap.AddDynamic(this, &APlayerPawn::RootCollision);
 	//Capsule->OnComponentEndOverlap.AddDynamic(this, &APlayerPawn::RootCollisionExit);
-	//Capsule->OnComponentHit.AddDynamic(this, &APlayerPawn::RootHit);
+	Capsule->OnComponentHit.AddDynamic(this, &APlayerPawn::RootHit);
 	RootComponent = Capsule;
 
 	MyCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));

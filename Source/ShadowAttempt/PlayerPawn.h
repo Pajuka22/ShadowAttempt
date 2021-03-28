@@ -38,13 +38,13 @@ public:
 
 
 	UPROPERTY(EditAnywhere, Category = "Capsule")
-		float SneakHeight = 16;
+		float SneakHeight = 30;
 	UPROPERTY(EditAnywhere, Category = "Capsule")
 		float CrouchHeight = 50;
 	UPROPERTY(EditAnywhere, Category = "Capsule")
 		float NormalHeight = 100;
 	UPROPERTY(EditAnywhere, Category = "Capsule")
-		float HeightInterpTime = 0.3;
+		float HeightInterpTime = 0.1;
 	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
 		float SneakThreshold;
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "1", ClampMax = "100"), Category = "Capsule")
@@ -103,7 +103,7 @@ public:
 	FVector DesiredUp;
 	/*max degrees per second when rotating player to desired up direction*/
 	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
-		float MaxRotateSpeed;
+		float MaxRotateSpeed = 360;
 	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
 		int MaxSneakBuffer = 30;
 	UPROPERTY(EditAnywhere)
