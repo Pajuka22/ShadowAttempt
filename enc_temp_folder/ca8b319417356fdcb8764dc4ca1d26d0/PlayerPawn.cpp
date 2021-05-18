@@ -121,8 +121,9 @@ void APlayerPawn::Tick(float DeltaTime)
 	if (bBufferSprint) {
 		Sprint();
 	}
-	if (SneakBuffer > 0) {
-		SneakBuffer -= DeltaTime;
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Yellow, FString::FromInt(SneakBuffer));
+	if (SneakBuffer > 1) {
+		--SneakBuffer;
 		if (!ShadowSneak) StartSneak();
 	}
 	if (CheckGrounded()) SneakBuffer = -1;
@@ -133,7 +134,7 @@ void APlayerPawn::Tick(float DeltaTime)
 		FVector newUp = tmpDesiredUp;
 		FVector newRight;
 		FVector newForward;
-		if ((newUp ^ camForward).DistanceInDirection(GetActorRightVector()) > 0){// && (newUp.DistanceInDirection(GetActorForwardVector()) > 0)){
+		if ((newUp ^ camForward).DistanceInDirection(GetActorRightVector()) > 0 && (newUp.DistanceInDirection(newForward) > 0)){
 			newRight = newUp ^ camForward;
 			newForward = newUp ^ newRight;
 		}
@@ -147,7 +148,6 @@ void APlayerPawn::Tick(float DeltaTime)
 				newRight = newUp ^ newForward;
 			}
 		}
-		//if((newUp ^ camForward).DistanceInDirection(GetActorRightVector()) > 0)
 		newUp.Normalize();
 		newRight.Normalize();
 		newForward.Normalize();
@@ -237,6 +237,10 @@ void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void APlayerPawn::Pause() {
 
+	isPaused = !isPaused;
+
+	UGameplayStatics::SetGamePaused(this, isPaused);
+
 	if (wPause) // Check if the Asset is assigned in the blueprint.
 	{
 		APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GWorld, 0);
@@ -267,9 +271,6 @@ void APlayerPawn::Pause() {
 			PlayerController->SetInputMode(FInputModeGameAndUI());
 		}
 	}
-	isPaused = !isPaused;
-
-	UGameplayStatics::SetGamePaused(this, isPaused);
 }
 
 UPawnMovementComponent* APlayerPawn::GetMovementComponent() const

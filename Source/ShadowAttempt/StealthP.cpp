@@ -15,7 +15,7 @@ AStealthP::AStealthP()
 
 	Source = CreateDefaultSubobject<UPointLightComponent>(TEXT("Source"));
 	Source->IntensityUnits = ELightUnits::Candelas;
-	Source->Intensity = 500;
+	Source->Intensity = 100;
 }
 
 // Called when the game starts or when spawned

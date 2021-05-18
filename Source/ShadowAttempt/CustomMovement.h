@@ -54,6 +54,7 @@ public:
 	bool CanJump();
 	bool Stepping;
 	bool StartJump;
+	bool Jumping;
 	bool EndJump;
 	class APlayerPawn* Pawn;
 	int GroundNum = 0;

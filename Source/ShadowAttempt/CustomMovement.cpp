@@ -33,7 +33,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 		}
 	}
 	else if(EndJump){
-		StartJump = EndJump = false;
+		StartJump = EndJump = Jumping = false;
 		JumpVel = FVector::ZeroVector;
 	}
 	
@@ -98,7 +98,7 @@ void UCustomMovement::Jump() {
 	if (CanJump()) {
 		DownVel = FVector::ZeroVector;
 		JumpVel = UpdatedComponent->GetUpVector() * (Pawn->ShadowSneak ? 200 * FMath::Sqrt(Gravity * (JumpHeight + (Pawn->NormalHeight - Pawn->SneakHeight)/100)) : JumpSpeed);
-		StartJump = true;
+		StartJump = Jumping = true;
 	}
 }
 bool UCustomMovement::CheckGrounded() {

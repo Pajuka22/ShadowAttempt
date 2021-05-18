@@ -5,6 +5,10 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "PlayerVisibility.h"
+#include "GameFramework/Actor.h"
+#include "Engine/EngineTypes.h"
+#include "MyGameInstance.h"
+#include "Components/Widget.h"
 #include "PlayerPawn.generated.h"
 
 UCLASS()
@@ -18,13 +22,32 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void EndPlay(EEndPlayReason::Type Reason) override;
+	UMyGameInstance* gameInstance;
+
 
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	PlayerVisibility DStealth(FVector angle, float magnitude, float length);
+	PlayerVisibility SStealth(FVector spotlight, float inner, float outer, float Attenuation, FVector spotAngle, float Candelas);
+	PlayerVisibility PStealth(FVector position, float attenuation, float Candelas);
+
+	float GetCapsuleVisibleArea();
+
+	bool CheckGrounded();
+
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+		TSubclassOf<UUserWidget> wPause;
+
+	UUserWidget* pauseMenu;
+	bool isPaused = false;
+
+	void Pause();
 
 	UPROPERTY(EditAnywhere)
 		UStaticMeshComponent* VisibleComponent;
@@ -58,6 +81,8 @@ public:
 	/*How much of an incfluence should tilting in shadow sneak have on look direction?*/
 	UPROPERTY(EditAnywhere, Category = "Camera|Camera Motion|Shadow Sneak", meta = (ClampMin = "0", ClampMax = "1"))
 		float DefaultCamSneakInfluence = 0;
+	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
+		class UCurveFloat* RotateSpeedMultiplier;
 
 	float CamSneakInfluence;
 
@@ -67,8 +92,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
 		int ShadowDropTime = 3;
 
-	bool CheckGrounded();
-
 	bool ShadowSneak = false;
 	int Grounded = 0;
 	bool bCrouch = false;
@@ -76,29 +99,11 @@ public:
 	bool bBufferSprint = false;
 	bool bBufferEndSprint = false;
 	bool bMovementOverrideFloorNormal = false;
-	struct Visibility {
-		float Vis;
-		float GroundVis;
-		/*Visibility(float v, float g) {
-			Vis = v;
-			GroundVis = g;
-		}
-		Visibility operator*=(float scale) {
-			Vis *= scale;
-			GroundVis *= scale;
-			return *this;
-		}
-		Visibility operator+(Visibility& v1, Visibility& v2) const{
-			
-		}*/
-	};
 
-	PlayerVisibility DStealth(FVector angle, float magnitude, float length);
-	PlayerVisibility SStealth(FVector spotlight, float inner, float outer, float Attenuation, FVector spotAngle, float Candelas);
-	PlayerVisibility PStealth(FVector position, float attenuation, float Candelas);
+	
 
 	PlayerVisibility MyVis;
-	float GetCapsuleVisibleArea();
+	
 
 	FVector FloorNormal;
 	//FVector OldNormal;
@@ -108,14 +113,14 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
 		float MaxRotateSpeed = 360;
 	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
-		int MaxSneakBuffer = 30;
+		float MaxSneakBuffer = 0.6;
 	UPROPERTY(EditAnywhere)
 		float MaxHP;
 
 	float CurrentHP;
 
 protected:
-	int SneakBuffer = 0;
+	float SneakBuffer = 0;
 	FVector Under;
 	float UnderDist = 0;
 	float CurveTime = 0;
