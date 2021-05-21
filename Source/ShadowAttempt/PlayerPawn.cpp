@@ -337,9 +337,9 @@ void APlayerPawn::StartSneak() {
 	if (CheckGrounded()) {
 		startHeight = currentHeight;
 		endHeight = SneakHeight;
+		notGroundedTime = 0;
 	}
 	else if (SneakBuffer < 0) SneakBuffer = MaxSneakBuffer;
-	notGroundedTime = 0;
 	ShadowSneak = true;
 }
 void APlayerPawn::EndSneak() {
