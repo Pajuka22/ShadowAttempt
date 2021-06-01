@@ -72,7 +72,7 @@ void APlayerPawn::Tick(float DeltaTime)
 	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Emerald, MyVis.ToString());
 	MovementComp->GroundNum = Grounded;
 	//if it's not grounded
-	
+	//handles running off edges
 	if (!Grounded && !MovementComp->Jumping) {
 		
 		FHitResult outHit;
@@ -337,7 +337,7 @@ void APlayerPawn::StartSneak() {
 	if (CheckGrounded()) {
 		startHeight = currentHeight;
 		endHeight = SneakHeight;
-		notGroundedTime = 0;
+		//notGroundedTime = 0;
 	}
 	else if (SneakBuffer < 0) SneakBuffer = MaxSneakBuffer;
 	ShadowSneak = true;
