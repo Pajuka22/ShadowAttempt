@@ -47,6 +47,7 @@ public:
 	UUserWidget* pauseMenu;
 	bool isPaused = false;
 
+	UFUNCTION(BlueprintCallable)
 	void Pause();
 
 	UPROPERTY(EditAnywhere)
