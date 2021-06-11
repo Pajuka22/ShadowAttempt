@@ -84,9 +84,8 @@ void APlayerPawn::Tick(float DeltaTime)
 		GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_EngineTraceChannel2, params);
 
 		if (outHit.bBlockingHit) {
-			if (outHit.Actor != NULL && outHit.ImpactNormal.RadiansToVector(ShadowSneak ? DesiredUp : FVector::UpVector) <= MovementComp->MaxAngle * PI / 180) {
-				GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Purple, outHit.Actor != NULL ? outHit.Actor->GetName() : "hit non-actor");
-				DrawDebugLine(GetWorld(), outHit.ImpactPoint, outHit.ImpactNormal * 100 + outHit.ImpactPoint, FColor::Purple, false, 5);
+			GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Purple, outHit.Actor != NULL ? outHit.Actor->GetName() : "hit non-actor");
+			if (outHit.Actor != NULL && FloorNormal.RadiansToVector(DesiredUp) <= MovementComp->MaxAngle * PI / 180) {
 				if (outHit.Actor->FindComponentByClass<USneakOverride>() != NULL) {
 					DesiredUp = outHit.Actor->FindComponentByClass<USneakOverride>()->Normal;
 				}

@@ -6,6 +6,8 @@ public class ShadowAttempt : ModuleRules
 {
 	public ShadowAttempt(ReadOnlyTargetRules Target) : base(Target)
 	{
+		MinFilesUsingPrecompiledHeaderOverride = 1;
+		bFasterWithoutUnity = true;
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
 		PublicDependencyModuleNames.AddRange(new string[] { "HeadMountedDisplay", "Core", "CoreUObject", "Engine", "InputCore", "UMG" });
