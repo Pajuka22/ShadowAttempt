@@ -17,10 +17,9 @@ class SHADOWATTEMPT_API UMyUserWidget : public UUserWidget
 
 public:
 
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Behavior")
-		void Back();
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behavior")
-		UMyUserWidget* parent = NULL;
+	UFUNCTION(BlueprintCallable, Category = "Behavior")
+		virtual void Back();
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Behavior")
 		int prev = -1;
 };

@@ -99,6 +99,7 @@ void APlayerPawn::Tick(float DeltaTime)
 			else DesiredUp = outHit.ImpactNormal;
 		}
 		else if (notGroundedTime == 0) {
+			//FloorNormal = FVector::UpVector;
 			MovementComp->DownVel = FVector::ZeroVector;
 		}
 	}
@@ -109,10 +110,10 @@ void APlayerPawn::Tick(float DeltaTime)
 		if (notGroundedTime >= ShadowDropTime && ShadowSneak) {
 			//return to default up direction
 			EndSneak();
-			FloorNormal = FVector::UpVector;
 			//if (MovementComp->JumpVel.IsNearlyZero()) MovementComp->DownVel = FVector::ZeroVector;
 		}
 		else ++notGroundedTime;
+		FloorNormal = FVector::UpVector;
 	}
 	else {
 		//reset timer if it's grounded
@@ -216,6 +217,7 @@ void APlayerPawn::Tick(float DeltaTime)
 	Under = GetActorLocation();
 	UnderDist = 1;
 	CamSneakInfluence = DefaultCamSneakInfluence;
+	MovementComp->bGroundedCache = Grounded > 0;
 }
 
 // Called to bind functionality to input
@@ -242,13 +244,13 @@ void APlayerPawn::Pause() {
 	{
 		APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GWorld, 0);
 		if (isPaused) {
-			GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Green, "unpausing... theoretically");
+			//GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Green, "unpausing... theoretically");
 			if(pauseMenu) pauseMenu->RemoveFromParent();
 			PlayerController->bShowMouseCursor = false;
 			PlayerController->SetInputMode(FInputModeGameOnly());
 		}
 		else {
-			GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Red, "Pausing");
+			//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Red, "Pausing");
 			// Create the widget and store it.
 			pauseMenu = CreateWidget<UUserWidget>(GetWorld(), wPause);
 

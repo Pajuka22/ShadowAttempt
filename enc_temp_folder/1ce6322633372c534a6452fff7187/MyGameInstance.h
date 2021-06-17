@@ -41,7 +41,6 @@ public:
 		TEXT("LookUp"),
 		TEXT("LookUpAtRate"),
 		TEXT("LookRight"),
-		TEXT("LookRightAtRate"),
-		TEXT("Pause")
+		TEXT("LookRightAtRate")
 	};
 };
