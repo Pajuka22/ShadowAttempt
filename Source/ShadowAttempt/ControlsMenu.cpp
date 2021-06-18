@@ -18,12 +18,16 @@ void UControlsMenu::SwapIfNeeded(FKeySelectorInfo binding, TArray<FKeySelectorIn
 			//check if it's unbindable and no duplicates are allowed.
 			if (UMyGameInstance::Unbindables.Contains(matches[i].name) && DisallowDuplicates.Contains(matches[i].name)) {
 				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Green, "Tried swapping with unbindable. can't.");
+				BB1->DontValidateOnce();
+				BB1->SetSelectedKey(beforeBinding);
 				return;
 			}
 			BB2 = GetBindButtonByInfo(matches[i]);
 			if (BB2) {
 				//check if BB2 can bind the input. if it can't return.
 				if (!BB2->CanBindInput(beforeBinding)) {
+					BB1->DontValidateOnce();
+					BB1->SetSelectedKey(beforeBinding);
 					GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Green, "Could not find a bind button.");
 					return;
 				}

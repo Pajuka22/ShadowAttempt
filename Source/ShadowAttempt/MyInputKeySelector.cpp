@@ -19,7 +19,7 @@ UMyInputKeySelector::UMyInputKeySelector() {
 
 FInputChord& UMyInputKeySelector::UpdateKeys()
 {
-	bAllowModifierKeys = !info.isAction;
+	//SetAllowModifierKeys(info.isAction);
 	bool foundIt = false;
 	if (info.isAction) {
 		TArray<FInputActionKeyMapping> mappings;
@@ -28,7 +28,7 @@ FInputChord& UMyInputKeySelector::UpdateKeys()
 			if (mappings[i].Key.IsGamepadKey() == bAllowGamepadKeys) {
 				foundIt = true;
 				SelectedKey = FInputChord(mappings[i].Key, mappings[i].bShift, mappings[i].bCtrl, mappings[i].bAlt, mappings[i].bCmd);
-				SetNoKeySpecifiedText(SelectedKey.GetKeyText().ToString() != FString() ? SelectedKey.GetKeyText() : SelectedKey.Key.GetDisplayName());
+				SetNoKeySpecifiedText(SelectedKey.GetInputText().ToString() != FString() ? SelectedKey.GetInputText() : SelectedKey.Key.GetDisplayName());
 				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Cyan, SelectedKey.GetInputText().ToString());
 				break;
 			}
@@ -40,8 +40,9 @@ FInputChord& UMyInputKeySelector::UpdateKeys()
 		for (int i = 0; i < mappings.Num(); ++i) {
 			if (mappings[i].Key.IsGamepadKey() == bAllowGamepadKeys && FMath::Sign(mappings[i].Scale) == FMath::Sign(info.axisScale)) {
 				foundIt = true;
-				SelectedKey = FInputChord(mappings[i].Key, false, false, false, false);
-				SetNoKeySpecifiedText(SelectedKey.GetKeyText().ToString() != FString() ? SelectedKey.GetKeyText() : SelectedKey.Key.GetDisplayName());
+				FInputChord currentMapping(mappings[i].Key, false, false, false, false);
+				SetNoKeySpecifiedText(currentMapping.GetKeyText().ToString() != FString() ? currentMapping.GetKeyText() : currentMapping.Key.GetDisplayName());
+				SelectedKey = currentMapping;
 				break;
 			}
 		}
@@ -54,9 +55,12 @@ FInputChord& UMyInputKeySelector::UpdateKeys()
 
 void UMyInputKeySelector::Bind(const FInputChord input)
 {
-	Unbind();
-	if (info.isAction) BindAction(input);
-	else BindAxis(input);
+	if (CanBindInput(input)) {
+		Unbind();
+		if (info.isAction) BindAction(input);
+		else BindAxis(input);
+	}
+	UpdateKeys();
 }
 
 void UMyInputKeySelector::Unbind() {
@@ -78,13 +82,11 @@ void UMyInputKeySelector::Unbind() {
 			}
 		}
 	}
-	UpdateKeys();
 }
 
 void UMyInputKeySelector::BindAction(FInputChord input) {
 	FInputActionKeyMapping toMap(info.name, input.Key, input.bShift, input.bCtrl, input.bAlt, input.bCmd);
 	UInputSettings::GetInputSettings()->AddActionMapping(toMap, true);
-	UpdateKeys();
 }
 
 void UMyInputKeySelector::BindAxis(FInputChord input) {
@@ -98,7 +100,9 @@ void UMyInputKeySelector::BindAxis(FInputChord input) {
 
 void UMyInputKeySelector::ValidateInput(FInputChord input) {
 	if (!CanBindInput(input)) {
-		UpdateKeys();
+		GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, "Couldn't bind input");
+		DontValidateOnce();
+		SetSelectedKey(UpdateKeys());
 		return;
 	}
 	TArray<FKeySelectorInfo> matches;
@@ -156,7 +160,6 @@ void UMyInputKeySelector::DontValidateOnce() {
 
 bool UMyInputKeySelector::CanBindInput(const FInputChord input) {
 	bool b = info.isAction || !(input.bAlt || input.bCmd || input.bCtrl || input.bShift);
-	if (!b) GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, "Couldn't bind input");
 	return b;
 }
 
