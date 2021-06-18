@@ -8,11 +8,13 @@
 #include "GameFramework/PlayerInput.h"
 #include "KeySelectorInfo.h"
 #include "GameFramework/PlayerInput.h"
+#include "MyGameInstance.h"
 
 UMyInputKeySelector::UMyInputKeySelector() {
 	FScriptDelegate validate;
 	validate.BindUFunction(this, "ValidateInput");
 	OnKeySelected.Add(validate);
+	bindable = UMyGameInstance::Unbindables.Contains(info.name);
 }
 
 FInputChord& UMyInputKeySelector::UpdateKeys()
@@ -25,13 +27,9 @@ FInputChord& UMyInputKeySelector::UpdateKeys()
 		for (int i = 0; i < mappings.Num(); ++i) {
 			if (mappings[i].Key.IsGamepadKey() == bAllowGamepadKeys) {
 				foundIt = true;
-				SelectedKey.Key = mappings[i].Key;
-				SelectedKey.bAlt = mappings[i].bAlt;
-				SelectedKey.bCmd = mappings[i].bCmd;
-				SelectedKey.bCtrl = mappings[i].bCtrl;
-				SelectedKey.bShift = mappings[i].bShift;
-				//SetSelectedKey(SelectedKey);
-				SetNoKeySpecifiedText(SelectedKey.GetInputText());
+				SelectedKey = FInputChord(mappings[i].Key, mappings[i].bShift, mappings[i].bCtrl, mappings[i].bAlt, mappings[i].bCmd);
+				SetNoKeySpecifiedText(SelectedKey.GetKeyText().ToString() != FString() ? SelectedKey.GetKeyText() : SelectedKey.Key.GetDisplayName());
+				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Cyan, SelectedKey.GetInputText().ToString());
 				break;
 			}
 		}
@@ -43,7 +41,7 @@ FInputChord& UMyInputKeySelector::UpdateKeys()
 			if (mappings[i].Key.IsGamepadKey() == bAllowGamepadKeys && FMath::Sign(mappings[i].Scale) == FMath::Sign(info.axisScale)) {
 				foundIt = true;
 				SelectedKey = FInputChord(mappings[i].Key, false, false, false, false);
-				SetNoKeySpecifiedText(SelectedKey.GetInputText());
+				SetNoKeySpecifiedText(SelectedKey.GetKeyText().ToString() != FString() ? SelectedKey.GetKeyText() : SelectedKey.Key.GetDisplayName());
 				break;
 			}
 		}
@@ -80,6 +78,7 @@ void UMyInputKeySelector::Unbind() {
 			}
 		}
 	}
+	UpdateKeys();
 }
 
 void UMyInputKeySelector::BindAction(FInputChord input) {

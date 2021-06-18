@@ -16,7 +16,7 @@ void UControlsMenu::SwapIfNeeded(FKeySelectorInfo binding, TArray<FKeySelectorIn
 		UMyGameInstance* game = Cast<UMyGameInstance>(UGameplayStatics::GetGameInstance(this));
 		for (int i = 0; i < matches.Num(); ++i) {
 			//check if it's unbindable and no duplicates are allowed.
-			if (game->Unbindables.Contains(matches[i].name) && DisallowDuplicates.Contains(matches[i].name)) {
+			if (UMyGameInstance::Unbindables.Contains(matches[i].name) && DisallowDuplicates.Contains(matches[i].name)) {
 				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Green, "Tried swapping with unbindable. can't.");
 				return;
 			}

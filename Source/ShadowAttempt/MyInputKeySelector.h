@@ -38,6 +38,7 @@ public:
 	FString ToString();
 	void Unbind();
 private:
+	bool bindable;
 	void BindAction(const FInputChord input);
 	void BindAxis(const FInputChord input);
 	UFUNCTION()

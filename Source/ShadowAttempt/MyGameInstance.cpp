@@ -3,3 +3,10 @@
 
 #include "MyGameInstance.h"
 
+TArray<FName> UMyGameInstance::Unbindables = {
+		TEXT("LookUp"),
+		TEXT("LookUpAtRate"),
+		TEXT("LookRight"),
+		TEXT("LookRightAtRate"),
+		TEXT("Pause")
+};

@@ -35,13 +35,6 @@ public:
 		TEXT("Sneaky"),
 	};
 
-	UPROPERTY(BlueprintReadOnly, Category = "Player Controls|InputModes")
-	TArray<FName> Unbindables =
-	{
-		TEXT("LookUp"),
-		TEXT("LookUpAtRate"),
-		TEXT("LookRight"),
-		TEXT("LookRightAtRate"),
-		TEXT("Pause")
-	};
+	//UPROPERTY(BlueprintReadOnly, Category = "Player Controls|InputModes")
+		static TArray<FName> Unbindables;
 };
