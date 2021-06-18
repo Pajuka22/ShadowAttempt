@@ -159,7 +159,7 @@ void UMyInputKeySelector::DontValidateOnce() {
 }
 
 bool UMyInputKeySelector::CanBindInput(const FInputChord input) {
-	bool b = info.isAction || !(input.bAlt || input.bCmd || input.bCtrl || input.bShift);
+	bool b = bAllowGamepadKeys == input.Key.IsGamepadKey() && (info.isAction || !(input.bAlt || input.bCmd || input.bCtrl || input.bShift));
 	return b;
 }
 

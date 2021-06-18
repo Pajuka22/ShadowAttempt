@@ -20,21 +20,10 @@ public:
 	float LookScaleX = 1;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Controls|Camera")
 	float LookScaleY = 1;
-	UPROPERTY(BlueprintReadOnly, Category = "Player Controls|InputModes")
-		TArray<FName> GamplayActionAxes = 
-	{ 
-		TEXT("MoveForward"), 
-		TEXT("MoveRight"), 
-		TEXT("LookUp"), 
-		TEXT("LookUpAtRate"), 
-		TEXT("Turn"), 
-		TEXT("TurnAtRate"),
-		TEXT("Jump"),
-		TEXT("Sprint"),
-		TEXT("Crouch"),
-		TEXT("Sneaky"),
-	};
-
+	UFUNCTION(BlueprintCallable)
+		static TArray<FName> GetGameplayActionAxes();
 	//UPROPERTY(BlueprintReadOnly, Category = "Player Controls|InputModes")
-		static TArray<FName> Unbindables;
+		static const TArray<FName> GameplayActionAxes;
+	//UPROPERTY(BlueprintReadOnly, Category = "Player Controls|InputModes")
+		static const TArray<FName> Unbindables;
 };
