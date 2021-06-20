@@ -29,7 +29,6 @@ FInputChord& UMyInputKeySelector::UpdateKeys()
 				foundIt = true;
 				SelectedKey = FInputChord(mappings[i].Key, mappings[i].bShift, mappings[i].bCtrl, mappings[i].bAlt, mappings[i].bCmd);
 				SetNoKeySpecifiedText(SelectedKey.GetInputText().ToString() != FString() ? SelectedKey.GetInputText() : SelectedKey.Key.GetDisplayName());
-				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Cyan, SelectedKey.GetInputText().ToString());
 				break;
 			}
 		}
@@ -94,14 +93,12 @@ void UMyInputKeySelector::BindAxis(FInputChord input) {
 
 	FInputAxisKeyMapping toMap(info.name, input.Key, info.axisScale);
 	
-	GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Magenta, FString(TEXT("Binding ")).Append(input.GetInputText().ToString()).Append(" to ").Append(ToString()));
 	UInputSettings::GetInputSettings()->AddAxisMapping(toMap, true);
 	UpdateKeys();
 }
 
 void UMyInputKeySelector::ValidateInput(FInputChord input) {
 	if (!CanBindInput(input)) {
-		GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, "Couldn't bind input");
 		DontValidateOnce();
 		SetSelectedKey(UpdateKeys());
 		return;
@@ -137,7 +134,6 @@ FKeySelectorInfo UMyInputKeySelector::SharesInputWithMapping(const FInputChord& 
 	FInputChord mappingChord(mapping.Key, mapping.bShift, mapping.bCtrl, mapping.bAlt, mapping.bCmd);
 	if (mapping.ActionName != info.name && mappingChord == chord) {
 		match.name = mapping.ActionName;
-		GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Blue, mapping.ActionName.ToString());
 	}
 	
 	return match;

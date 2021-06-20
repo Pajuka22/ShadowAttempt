@@ -11,13 +11,10 @@ void UControlsMenu::SwapIfNeeded(FKeySelectorInfo binding, TArray<FKeySelectorIn
 	if (BB1) {
 		FInputChord toBind = BB1->SelectedKey;
 		FInputChord beforeBinding = BB1->UpdateKeys();
-		//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Yellow, toBind.GetInputText().ToString());
-		//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, beforeBinding.GetInputText().ToString());
 		UMyGameInstance* game = Cast<UMyGameInstance>(UGameplayStatics::GetGameInstance(this));
 		for (int i = 0; i < matches.Num(); ++i) {
 			//check if it's unbindable and no duplicates are allowed.
 			if (UMyGameInstance::Unbindables.Contains(matches[i].name) && DisallowDuplicates.Contains(matches[i].name)) {
-				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Green, "Tried swapping with unbindable. can't.");
 				BB1->DontValidateOnce();
 				BB1->SetSelectedKey(beforeBinding);
 				return;
@@ -28,13 +25,11 @@ void UControlsMenu::SwapIfNeeded(FKeySelectorInfo binding, TArray<FKeySelectorIn
 				if (!BB2->CanBindInput(beforeBinding)) {
 					BB1->DontValidateOnce();
 					BB1->SetSelectedKey(beforeBinding);
-					GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Green, "Could not find a bind button.");
 					return;
 				}
 			}
 			//check if the button is allowed to have duplicates if there's no bind button for it.
 			else if (DisallowDuplicates.Contains(matches[i].name)) {
-				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Green, "Button is bindable but can't be changed back. aborting.");
 				BB1->DontValidateOnce();
 				BB1->SetSelectedKey(beforeBinding);
 				return;

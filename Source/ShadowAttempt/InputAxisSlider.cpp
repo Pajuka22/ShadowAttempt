@@ -11,7 +11,6 @@ UInputAxisSlider::UInputAxisSlider() {
 }
 
 void UInputAxisSlider::SetAxesValues(float val) {
-	//GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Green, FString::FromInt(AffectedAxes.Num()));
 	for (int i = 0; i < AffectedAxes.Num(); ++i) {
 		TArray<FInputAxisKeyMapping> bindings;
 		UInputSettings::GetInputSettings()->GetAxisMappingByName(AffectedAxes[i], bindings);
@@ -19,7 +18,6 @@ void UInputAxisSlider::SetAxesValues(float val) {
 			if (bindings[j].Key.IsGamepadKey() == bGamepad) {
 				FInputAxisKeyMapping toMap(bindings[j]);
 				toMap.Scale = FMath::Sign(toMap.Scale) * val;
-				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Orange, FString::SanitizeFloat(toMap.Scale));
 				UInputSettings::GetInputSettings()->RemoveAxisMapping(bindings[j]);
 				UInputSettings::GetInputSettings()->AddAxisMapping(toMap, true);
 			}
