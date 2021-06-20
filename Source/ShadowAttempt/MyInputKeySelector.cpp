@@ -61,6 +61,7 @@ void UMyInputKeySelector::Bind(const FInputChord input)
 		else BindAxis(input);
 	}
 	UpdateKeys();
+	UInputSettings::GetInputSettings()->SaveKeyMappings();
 }
 
 void UMyInputKeySelector::Unbind() {

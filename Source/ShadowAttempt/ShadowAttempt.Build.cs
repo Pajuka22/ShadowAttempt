@@ -12,7 +12,7 @@ public class ShadowAttempt : ModuleRules
 	
 		PublicDependencyModuleNames.AddRange(new string[] { "HeadMountedDisplay", "Core", "CoreUObject", "Engine", "InputCore"});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "UMG", "Slate", "SlateCore" });
+		PrivateDependencyModuleNames.AddRange(new string[] {"Slate", "SlateCore" });
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

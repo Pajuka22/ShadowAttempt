@@ -8,7 +8,8 @@ const TArray<FName> UMyGameInstance::Unbindables = {
 		TEXT("LookUpAtRate"),
 		TEXT("LookRight"),
 		TEXT("LookRightAtRate"),
-		TEXT("Pause")
+		TEXT("Pause"),
+		TEXT("Reset")
 };
 
 const TArray<FName> UMyGameInstance::GameplayActionAxes =
