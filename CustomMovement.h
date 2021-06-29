@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "CustomMovement.generated.h"
-#include "Curves/CurveFloat.h"
 
 /**
  *
@@ -17,118 +16,57 @@ class SHADOWATTEMPT_API UCustomMovement : public UPawnMovementComponent
 
 
 public:
-	UCustomMovement();
-	enum MoveTypes{
-		Walk,
-		Crouch,
-		Sprint,
-		Sneak
-	}
-	
-
-
-private:
-	UPROPERTY(EditAnywhere, Category = "Size")
-	float normalRadius;
-	
-	UPROPERTY(EditAnywhere, Category = "Size")
-	float normalHeight;
-	
-	UPROPERTY(EditAnywhere, Category = "Size")
-	float sneakHeight;
-	
-	UPROPERTY(EditAnywhere, Category = "Size")
-	float crouchHeight;
-	
-	UPROPERTY(EditAnywhere, Category = "Movement|Traversal", meta = (ClampMin = "0", ClampMax =  "90"))
-	float maxAngle;
-	
-	UPROPERTY(EditAnywhere, Category = "Movement|Traversal", meta = (ClampMin = "0"))
-	float stepHeight;
-	
-	UPROPERTY(EditAnywhere, Category = "Movement|Speed", meta = (ClampMin = "0"))
-	float walkSpeed = 400;
-	
-	UPROPERTY(EditAnywhere, Category = "Movement|Speed", meta = (ClampMin = "0"))
-	float sprintSpeed = 750;
-	
-	UPROPERTY(EditAnywhere, Category = "Movement|Speed", meta = (ClampMin = "0"))
-	float crouchSpeed = 300;
-	
-	UPROPERTY(EditAnywhere, Category = "Movement|Speed", meta = (ClampMin = "0"))
-	float sneakSpeed = 600;
-	
-	UPROPERTY(EditAnywhere, Category = "Shadow Sneak", meta = (ClampMin = "0"))
-	float stopSneakTime;
-	
-	UPROPERTY(EditAnywhere, Category = "Shadow Sneak", meta = (ClampMin = "0"))
-	float sneakBufferWindow;
-	
-	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
-	//used to determine rotate speed depending on what the initial difference in the axes was.
-	UCurveFloat* rotateSpeedByInitialDifference;
-	
-	UPROPERTY(EditAnywhere, Category = "Shadow Sneak")
-	//used to determine rotate speed depending on what the actual difference was.
-	UCurveFloat* rotateSpeedByActualDifference;
-
-	UPROPERTY(EditAnywhere, Category = "Shadow Sneak", meta = (ClampMin = "0", ClampMax = "1"))
-	float camSneakInfluence;
-	
-	class UCameraComponent* playerCam = NULL;
-	
-	float notGroundedTime;
-	float heightInterpTime;
-	
-	MoveTypes buffer;
-	MoveTypes moveType;
-	float moveSpeed;
-	bool startJump;
-	bool endJump;
-	float angleAtStartRotate;
-
-	FVector downVel;
-	FVector jumpVel;
-	FVector lateralVel;
-	FVector heightAdjustVel;
-
-	bool shadowSneak;
-	FVector floorNormal = FVector::UpVector;
-	FVector desiredUp = FVector::UpVector;
-	int groundNum;
-	float distInMoveDir;
-
-	UCapsuleComponent* capsule;
-
-public:
-	void SetMoveType(MoveTypes);
-	void SetMoveSpeed();
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	UPROPERTY(EditAnywhere)
+		float StepHeight;
+	/*Max slope player can walk up/down.*/
+	UPROPERTY(EditAnywhere)
+		float MaxAngle = 50;
+	/*Max angle the player can wall walk on relative to current up vector*/
+	UPROPERTY(EditAnywhere)
+		float SneakMaxAngle = 90;
+	bool Running;
+	FVector DownVel = FVector::ZeroVector;
+	FVector JumpVel = FVector::ZeroVector;
+	FVector LateralVel = FVector::ZeroVector;
+	FVector HeightAdjustVel = FVector::ZeroVector;
+	FVector CurrentLatVel;
+	UPROPERTY(EditAnywhere, Category = "Movement Speed")
+		float SneakSpeed = 600;
+	UPROPERTY(EditAnywhere, Category = "Movement Speed")
+		float CrouchSpeed = 300;
+	UPROPERTY(EditAnywhere, Category = "Movement Speed")
+		float NormalSpeed = 400;
+	UPROPERTY(EditAnywhere, Category = "Movement Speed")
+		float SprintSpeed = 750;
+	float MovementSpeed;
+	UPROPERTY(EditAnywhere, meta = (ClampMin = "0"));
+		float JumpHeight = 2;
+	UPROPERTY(EditAnywhere)
+		float Gravity = 9.81;
+	bool Shadow;
+	float JumpSpeed = 800;
+	enum MovementType{Walk, Sprint, Crouch, Sneak};
+	MovementType MoveType;
+	void SetSpeed();
 	void Jump();
-	void SetCamSneakInfluence(float);
-	void SneakControl();
-	void StartSneak();
-	void EndSneak();
-	void Sprint();
-	void StopSprinting();
-	void Crouch();
-	void StopCrouching();
+	bool CheckGrounded();
+	bool CanJump();
+	bool Stepping;
+	bool StartJump;
+	bool Jumping;
+	bool EndJump;
+	class APlayerPawn* Pawn;
+	int GroundNum = 0;
+	UCapsuleComponent* Capsule;
+	bool Walking;
+	bool bGroundedCache;
+	bool CheckStepUp(FVector movement);
 
-private:
-
+protected:
 	virtual void BeginPlay() override;
-	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-
-	void RotatePlayer(float DeltaTime);
-
-	void CheckStepUp();
-	void CheckStepDown();
-
-	bool CanSneak();
-	bool CanCrouch();
-	bool CanSprintNormal();
-	float GetHeightAdjustment();
-	void AdjustHeight();
-
-	bool HittingBottom(FVector hitPos, float maxDeg = 90, bool top = false);
-	bool HittingSides(FVector hitpos);
+	
+	bool CheckStepDown(FVector movement);
+	float GetStepHeight(FVector movement);
+	bool CheckEndJump();
 };

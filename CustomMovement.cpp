@@ -9,10 +9,11 @@ void UCustomMovement::BeginPlay() {
 	Super::BeginPlay();
 	Pawn = Cast<APlayerPawn>(PawnOwner);
 	Capsule = Cast<UCapsuleComponent>(UpdatedComponent);
+	StartJump = false;
 	//i've written this out this way to make it more readable. multiplying both jump height and gravity by 100 because m to cm, 4 because of the way quadratic functions are
-	jumpSpeed = FMath::Sqrt(100 * JumpHeight * 4 * 100 * Gravity);
-	moveSpeed = NormalSpeed;
-	moveType = MovementType::Walk;
+	JumpSpeed = FMath::Sqrt(100 * JumpHeight * 4 * 100 * Gravity);
+	MovementSpeed = NormalSpeed;
+	MoveType = MovementType::Walk;
 }
 
 void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -23,150 +24,81 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	{
 		return;
 	}
-	if (groundNum > 0 && !startJump) SetSpeed();
+	if (GroundNum > 0 && !StartJump) SetSpeed();
 	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Purple, FString::SanitizeFloat(MovementSpeed));
-	if (groundNum == 0) {
-		if (startJump) {
-			startJump = false;
-			endJump = true;
+	if (GroundNum == 0) {
+		if (StartJump) {
+			StartJump = false;
+			EndJump = true;
 		}
 	}
-	else if(endJump){
-		startJump = endJump = Jumping = false;
+	else if(EndJump){
+		StartJump = EndJump = Jumping = false;
 		JumpVel = FVector::ZeroVector;
 	}
 	
-	lateralVel = ConsumeInputVector();
-	lateralVel = lateralVel.GetClampedToMaxSize(MovementSpeed);
-	//cache lateralVel because we're going to need to change and verify.
-	CurrentLatVel = lateralVel;
+	//this is for the player pawn to reference. I can't guarantee what happens first, so CheckGrounded may not be what it's supposed to be when called from the pawn.
+	bGroundedCache = CheckGrounded();
+	
+	LateralVel = ConsumeInputVector();
+	LateralVel = LateralVel.GetClampedToMaxSize(MovementSpeed);
+	//cache LateralVel because we're going to need to change and verify.
+	CurrentLatVel = LateralVel;
 	//make lateral vel perpendicular to the surface player's standing on.
-	if (FVector::DotProduct(lateralVel, Pawn->FloorNormal) != 0) {
-		FVector idk = FVector::CrossProduct(lateralVel, Pawn->FloorNormal);
-		lateralVel = FVector::CrossProduct(idk, Pawn->FloorNormal);
+	if (FVector::DotProduct(LateralVel, Pawn->FloorNormal) != 0) {
+		FVector idk = FVector::CrossProduct(LateralVel, Pawn->FloorNormal);
+		LateralVel = FVector::CrossProduct(idk, Pawn->FloorNormal);
 		//make sure player's moving in the direction they want to be moving.
-		if (lateralVel.DistanceInDirection(CurrentLatVel) < 0) lateralVel *= -1;
+		if (LateralVel.DistanceInDirection(CurrentLatVel) < 0) LateralVel *= -1;
 	}
 	//if they're stepping down and not stepping up (not necessarily mutually exclusive), double downward velocity.
-	if (CheckStepDown(lateralVel * DeltaTime) && !CheckStepUp(lateralVel * DeltaTime) && !startJump && !endJump) DownVel *= 2;
-	//if (CheckStepUp(lateralVel * DeltaTime) && groundNum >= 1) DownVel = Capsule->GetUpVector() * GetStepHeight(lateralVel * DeltaTime) * 10;
-	if (groundNum == 0) {
+	if (CheckStepDown(LateralVel * DeltaTime) && !CheckStepUp(LateralVel * DeltaTime) && !StartJump && !EndJump) DownVel *= 2;
+	//if (CheckStepUp(LateralVel * DeltaTime) && GroundNum >= 1) DownVel = Capsule->GetUpVector() * GetStepHeight(LateralVel * DeltaTime) * 10;
+	if (GroundNum == 0) {
 		DownVel += (MoveType == MovementType::Sneak ? Pawn->FloorNormal : FVector::UpVector) * -Gravity * DeltaTime * 200;
 	}
 
-	FVector desiredMovementThisFrame = (lateralVel + JumpVel + DownVel + HeightAdjustVel) * DeltaTime;
+	FVector DesiredMovementThisFrame = (LateralVel + JumpVel + DownVel + HeightAdjustVel) * DeltaTime;
 
 	FHitResult outHit;
 	
-	if (!desiredMovementThisFrame.IsNearlyZero())
+	if (!DesiredMovementThisFrame.IsNearlyZero())
 	{
-		SafeMoveUpdatedComponent(desiredMovementThisFrame, UpdatedComponent->GetComponentRotation(), true, outHit);
+		SafeMoveUpdatedComponent(DesiredMovementThisFrame, UpdatedComponent->GetComponentRotation(), true, outHit);
 
 		// If we bumped into something, try to slide along it
 		if (outHit.IsValidBlockingHit())
 		{
-			if((outHit.ImpactPoint - UpdatedComponent->GetComponentLocation()).DistanceInDirection(LateralVel) >= distInMoveDir && (shadowSneak ? (HittingBottom(outHit.ImpactPoint) || HittingSides(outHit.ImpactPoint)) : HittingBottom(outHit.ImpactPoint, maxAngle))){
-				floorNormal = outHit.ImpactNormal;
-				if(shadowSneak && !FVector::Coincident(desiredUp, floorNormal)) angleAtStartRotate = outHit.ImpactNormal.RadiansToVector(desiredUp);
-				desiredUp = shadowSneak ? outHit.ImpactNormal : FVector::UpVector;
-				distInMoveDir = (outHit.ImpactPoint - UpdatedComponent->GetComponentLocation()).DistanceInDirection(LateralVel);
-			}
-			if(HittingBottom(outHit.ImpactPoint, 45, true)){
-				jumpVel = FVector::ZeroVector;
-				downVel = FVector::ZeroVector;
-			}
-			SlideAlongSurface(desiredMovementThisFrame, 1.f - outHit.Time, outHit.Normal, outHit);
+			SlideAlongSurface(DesiredMovementThisFrame, 1.f - outHit.Time, outHit.Normal, outHit);
 		}
 	}
 	//accelerate if it's not actually touching the ground. linecasts don't count.
-	RotatePlayer(DeltaTime);
-	
 }
-
-void RotatePlayer(float DeltaTime){
-
-	if (!FVector::Coincident(desiredUp, GetActorUpVector())) {
-		if(playerCam) FVector camForward = playerCam->GetForwardVector();
-		FVector newUp = tmpDesiredUp;
-		FVector newRight;
-		FVector newForward;
-		if ((newUp ^ camForward).DistanceInDirection(GetActorRightVector()) > 0){// && (newUp.DistanceInDirection(GetActorForwardVector()) > 0)){
-			newRight = newUp ^ camForward;
-			newForward = newUp ^ newRight;
-		}
-		else {
-			if (!FVector::Coincident(GetActorForwardVector(), newUp)) {
-				newRight = newUp ^ GetActorForwardVector();
-				newForward = newUp ^ newRight;
-			}
-			else {
-				newForward = newUp ^ GetActorRightVector();
-				newRight = newUp ^ newForward;
-			}
-		}
-		//if((newUp ^ camForward).DistanceInDirection(GetActorRightVector()) > 0)
-		newUp.Normalize();
-		newRight.Normalize();
-		newForward.Normalize();
-		FQuat q = FTransform(newForward, newRight, newUp, FVector::ZeroVector).GetRotation();
-		float angDist = q.AngularDistance(GetActorQuat());
-		if (angDist <= MaxRotateSpeed * PI / 180 * DeltaTime * 
-		(rotateSpeedByActualDifference ? rotateSpeedByActualDifference->GetFloatValue(angDist * 2 / PI) : 1) *
-		(rotateSpeedByInitialDifference ? rotateSpeedByInitialDifference->GetFloatValue(angleAtStartRotate))) {
-			GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, "ima just rotate all the way.");
-		}
-		else {
-			GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::White, "not rotating all the way");
-			q = FQuat::Slerp(GetActorQuat(), q, MaxRotateSpeed * PI / 180 * DeltaTime * 
-			(rotateSpeedByActualDifference ? rotateSpeedByActualDifference->GetFloatValue(angDist * 2 / PI) : 1)/ angDist) *
-			(rotateSpeedByInitialDifference ? rotateSpeedByInitialDifference->GetFloatValue(angleAtStartRotate));
-		}
-		SetActorRotation(q);
-		if(playerCam){
-			float camLerp = camSneakInfluence;
-			if (camForward.DistanceInDirection(GetActorForwardVector()) < 0) {
-				camForward = FMath::Sign(camForward.DistanceInDirection(GetActorUpVector())) * GetActorUpVector();
-				camLerp = 1;
-			}
-			if (camLerp < 1) {
-				newUp = camForward ^ GetActorRightVector();
-				q = FTransform(camForward, GetActorRightVector(), newUp, FVector::ZeroVector).GetRotation();
-				playerCam->SetWorldRotation(FQuat::Slerp(q, playerCam->GetComponentQuat(), camLerp));
-			}
-		}
-	}
-}
-
-void UCustomMovement::SetMoveType(MoveTypes inType){
-	moveType = inType;
-}
-
 void UCustomMovement::SetSpeed()
 {
-	switch (moveType) {
+	switch (MoveType) {
 	case MovementType::Walk:
-		MovementSpeed = normalSpeed;
+		MovementSpeed = NormalSpeed;
 		break;
 	case MovementType::Crouch:
-		MovementSpeed = crouchSpeed;
+		MovementSpeed = CrouchSpeed;
 		break;
 	case MovementType::Sprint:
-		MovementSpeed = sprintSpeed;
+		MovementSpeed = SprintSpeed;
 		break;
 	case MovementType::Sneak:
-		MovementSpeed = sneakSpeed;
+		MovementSpeed = SneakSpeed;
 		break;
 	default:
-		MovementSpeed = normalSpeed;
+		MovementSpeed = NormalSpeed;
 		break;
 	}
 }
 void UCustomMovement::Jump() {
 	if (CanJump()) {
-		downVel = FVector::ZeroVector;
-		jumpVel = UpdatedComponent->GetUpVector() * (Pawn->ShadowSneak ? 200 * FMath::Sqrt(Gravity * (JumpHeight + (Pawn->NormalHeight - Pawn->SneakHeight)/100)) : jumpSpeed);
-		startJump = true;
-		EndSneak();
+		DownVel = FVector::ZeroVector;
+		JumpVel = UpdatedComponent->GetUpVector() * (Pawn->ShadowSneak ? 200 * FMath::Sqrt(Gravity * (JumpHeight + (Pawn->NormalHeight - Pawn->SneakHeight)/100)) : JumpSpeed);
+		StartJump = Jumping = true;
 	}
 }
 bool UCustomMovement::CheckGrounded() {
@@ -178,7 +110,7 @@ bool UCustomMovement::CheckGrounded() {
 		FHitResult Hit;
 		Params.AddIgnoredActor(UpdatedComponent->GetOwner());
 		bool IsHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
-		return groundNum > 0 || Stepping || Hit.bBlockingHit || CheckStepDown(lateralVel / 60) || CheckStepUp(lateralVel / 60);
+		return GroundNum > 0 || Stepping || Hit.bBlockingHit || CheckStepDown(LateralVel / 60) || CheckStepUp(LateralVel / 60);
 	}
 	return false;
 }
@@ -228,7 +160,7 @@ bool UCustomMovement::CheckStepDown(FVector movement) {
 		End = Start - Capsule->GetUpVector() * StepHeight;
 		//DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 1, 0, 1);
 		IsHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
-		return Hit.bBlockingHit && !startJump;
+		return Hit.bBlockingHit && !StartJump;
 	}
 	return false;
 }
@@ -249,7 +181,7 @@ bool UCustomMovement::CanJump() {
 		FHitResult OutHit;
 		Params.AddIgnoredActor(Pawn);
 		GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECC_Visibility, Params);
-		return OutHit.bBlockingHit || groundNum > 0;
+		return OutHit.bBlockingHit || GroundNum > 0;
 	}
 	return false;
 }
@@ -262,7 +194,7 @@ bool UCustomMovement::CheckEndJump() {
 		FHitResult Hit;
 		Params.AddIgnoredActor(UpdatedComponent->GetOwner());
 		bool IsHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
-		return groundNum > 0 || Hit.bBlockingHit;
+		return GroundNum > 0 || Hit.bBlockingHit;
 	}
 	return false;
 }
