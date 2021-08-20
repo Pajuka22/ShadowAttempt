@@ -238,42 +238,42 @@ void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Pause", IE_Pressed, this, &APlayerPawn::Pause).bExecuteWhenPaused = true;
 }
 
-void APlayerPawn::Pause() {
+	void APlayerPawn::Pause() {
 
-	if (wPause) // Check if the Asset is assigned in the blueprint.
-	{
-		APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GWorld, 0);
-		if (isPaused) {
-			//GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Green, "unpausing... theoretically");
-			if(pauseMenu) pauseMenu->RemoveFromParent();
-			PlayerController->bShowMouseCursor = false;
-			PlayerController->SetInputMode(FInputModeGameOnly());
-		}
-		else {
-			//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Red, "Pausing");
-			// Create the widget and store it.
-			pauseMenu = CreateWidget<UUserWidget>(GetWorld(), wPause);
-
-			// now you can use the widget directly since you have a referance for it.
-			// Extra check to  make sure the pointer holds the widget.
-			if (pauseMenu)
-			{
-				//let add it to the view port
-				pauseMenu->AddToViewport();
+		if (wPause) // Check if the Asset is assigned in the blueprint.
+		{
+			APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GWorld, 0);
+			if (isPaused) {
+				//GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Green, "unpausing... theoretically");
+				if(pauseMenu) pauseMenu->RemoveFromParent();
+				PlayerController->bShowMouseCursor = false;
+				PlayerController->SetInputMode(FInputModeGameOnly());
 			}
+			else {
+				//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Red, "Pausing");
+				// Create the widget and store it.
+				pauseMenu = CreateWidget<UUserWidget>(GetWorld(), wPause);
 
-			
-			//AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(PlayerController);
+				// now you can use the widget directly since you have a referance for it.
+				// Extra check to  make sure the pointer holds the widget.
+				if (pauseMenu)
+				{
+					//let add it to the view port
+					pauseMenu->AddToViewport();
+				}
 
-			//Show the Cursor.
-			PlayerController->bShowMouseCursor = true;
-			PlayerController->SetInputMode(FInputModeGameAndUI());
+				
+				//AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(PlayerController);
+
+				//Show the Cursor.
+				PlayerController->bShowMouseCursor = true;
+				PlayerController->SetInputMode(FInputModeGameAndUI());
+			}
 		}
-	}
-	isPaused = !isPaused;
+		isPaused = !isPaused;
 
-	UGameplayStatics::SetGamePaused(this, isPaused);
-}
+		UGameplayStatics::SetGamePaused(this, isPaused);
+	}
 
 UPawnMovementComponent* APlayerPawn::GetMovementComponent() const
 {
@@ -610,106 +610,80 @@ void APlayerPawn::GetAddHeight() {
 //i'm only going to comment this one in depth because the rest do basically the same thing.
 PlayerVisibility APlayerPawn::PStealth(FVector location, float Attenuation, float candelas) {
 	//i'll do 6 points
-	float mult, g = 0;
-	FHitResult outHit;
-	FCollisionQueryParams CollisionParams;
-	CollisionParams.AddIgnoredActor(this);
-	FVector Start;
+	float mult = 0, g = 0;
 	if (Capsule != nullptr && (GetActorLocation() - location).Size() <= Attenuation) {
-		float x, y = 0;
-		//for the top bottom, left, right, and center of the player, do a line check. If there's something in the way subtract 0.2 from the multiplier cuz 5 points
-		//if there's nothing in the don't do anything.
-		for (int i = -1; i <= 1; ++i) {
-			for (int j = -1; j <= 1; ++j) {
-				//dont' check corners or center
-				if ((i == 0) == (j == 0)) continue;
-
-				x = i * Capsule->GetScaledCapsuleRadius();
-				y = j * Capsule->GetScaledCapsuleHalfHeight();
-				Start = GetActorLocation() + GetActorUpVector() * y + GetActorRightVector() * x;
-				GetWorld()->LineTraceSingleByChannel(outHit, location, Start, ECC_Visibility, CollisionParams);
-				if (!outHit.bBlockingHit) {
-					//DrawDebugLine(GetWorld(), Start, location, FColor::Green, false, 1/60, 0, 1);
-					++mult;
-					if (j == -1) {
-						g = candelas * 10000 / (FMath::Pow((Start - location).Size(), 2));
+		FHitResult outHit;
+		FCollisionQueryParams CollisionParams;
+		CollisionParams.AddIgnoredActor(this);
+		FVector Start;
+		float radius = Capsule->GetScaledCapsuleRadius();
+		float height = Capsule->GetScaledCapsuleHalfHeight();
+		for(int x = -1; x <= 1; ++x){
+			for(int y = -1; y <= 1; ++y){
+				for(int z = -1; z <= 1; ++z){
+					//make sure it's the center of a face of this imaginary rubiks cube
+					if(FMath::Abs(x) + FMath::Abs(y) + FMath::Abs(z) != 1) continue;
+					//set the start position. a little inefficient because there's only one vector here that matters at a time but it's a lot more readable this way.
+					Start = GetActorLocation()
+					+ x * radius * GetActorForwardVector()
+					+ y * radius * GetActorRightVector()
+					+ z * radius * GetActorUpVector();
+					//do the line trace
+					GetWorld()->LineTraceSingleByChannel(outHit, location, Start, ECC_Visibility, CollisionParams);
+					//if there's nothing in the way, add to the multiplier, and set the ground visibility if we're looking at the bottom.
+					if (!outHit.bBlockingHit) {
+						++mult;
+						if (j == -1) {
+							g = candelas * 10000 / (FMath::Pow((Start - location).Size(), 2));
+						}
 					}
 				}
-				//else DrawDebugLine(GetWorld(), outHit.Location, location, FColor::Red, false, 1/60, 0, 1);
-				
-				if (j != 0 || i == 0) continue;
-				
-				Start = GetActorLocation() + GetActorUpVector() * y + GetActorForwardVector() * x;
-				GetWorld()->LineTraceSingleByChannel(outHit, location, Start, ECC_Visibility, CollisionParams);
-				if (!outHit.bBlockingHit) {
-					//DrawDebugLine(GetWorld(), Start, location, FColor::Green, false, 1/60, 0, 1);
-					++mult;
-				}
-				//else DrawDebugLine(GetWorld(), outHit.Location, location, FColor::Red, false, 1/60, 0, 1);
 			}
-		}
-
+		}	
 	}
-	else return PlayerVisibility(0, 0);
+	//mult is divided by 6 here because i'm adding one to mult rather than 1/6
 	return PlayerVisibility((2 * PI * (1 - FMath::Cos(PI)) * candelas * 10000) / (4 * PI * FMath::Pow((Start - location).Size(), 2)) * mult/6, g);
 }
 PlayerVisibility APlayerPawn::SStealth(FVector location, float inner, float outer, float Attenuation, FVector SpotAngle, float candelas) {
 	float g = 0;
 	float mult = 0;
-	//UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(RootComponent);
 	if (Capsule != nullptr && (GetActorLocation() - location).Size() <= Attenuation) {
 		float angle;
 		FVector Start;
 		FHitResult outHit;
 		FCollisionQueryParams params;
 		params.AddIgnoredActor(this);
-		float x, y;
-		for (int i = -1; i <= 1; ++i) {
-			for (int j = -1; j <= 1; ++j) {
-				if ((i == 0) == (j == 0)) continue;
-				x = i * Capsule->GetScaledCapsuleRadius();
-				y = j * Capsule->GetScaledCapsuleHalfHeight();
-				Start = GetActorLocation() + GetActorRightVector() * x + GetActorUpVector() * y;
-				angle = SpotAngle.RadiansToVector(Start - location) * 180 / PI;
-				if (angle <= outer) {
-					GetWorld()->LineTraceSingleByChannel(outHit, Start, location, ECC_Visibility, params);
-					//DrawDebugLine(GetWorld(), Start, location, FColor::Blue, false, 1 / 60, 0, 1);
-					if (!outHit.bBlockingHit) {
-						if (angle <= inner) {
-							++mult;
-						}
-						else {
-							mult += (outer - angle) / (outer - inner);
-						}
-						if (j == -1) {
-							g = (angle <= inner ? 1 : (outer - angle) / (outer - inner)) *
-								(2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000) / FMath::Pow((location - Start).Size(), 2);
-						}
-					}
-				}
-				if (j != 0) continue;
-
-				Start = GetActorLocation() + GetActorForwardVector() * x;
-				angle = SpotAngle.RadiansToVector(Start - location) * 180 / PI;
-				if (angle <= outer) {
-					//DrawDebugLine(GetWorld(), Start, location, FColor::Blue, false, 1 / 60, 0, 1);
-					GetWorld()->LineTraceSingleByChannel(outHit, Start, location, ECC_Visibility, params);
-					if (!outHit.bBlockingHit) {
-						if (angle <= inner) {
-							++mult;
-						}
-						else {
-							mult += (outer - angle) / (outer - inner);
+		float radius = Capsule->GetScaledCapsuleRadius();
+		float height = Capsule->GetScaledCapsuleHalfHeight();
+		for(int x = -1; x <= 1; ++x){
+			for(int y = -1; y <= 1; ++y){
+				for(int z = -1; z <= 1; ++z){
+					if(FMath::Abs(x) + FMath::Abs(y) + FMath::Abs(z) != 1) continue;
+					Start = GetActorLocation() + radius * x * GetActorForwardVector() + radius * y * GetActorRightVector() + height * z * GetActorUpVector();
+					angle = SpotAngle.RadiansToVector(Start - location) * 180 / PI;
+					if (angle <= outer) {
+						//DrawDebugLine(GetWorld(), Start, location, FColor::Blue, false, 1 / 60, 0, 1);
+						GetWorld()->LineTraceSingleByChannel(outHit, Start, location, ECC_Visibility, params);
+						if (!outHit.bBlockingHit) {
+							//inner vs outer angle lerping
+							if (angle <= inner) {
+								++mult;
+							}
+							else {
+								mult += (outer - angle) / (outer - inner);
+							}
+							//setting ground vis
+							if (j == -1) {
+								g = (angle <= inner ? 1 : (outer - angle) / (outer - inner)) *
+									(2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000) / FMath::Pow((location - Start).Size(), 2);
+							}
 						}
 					}
 				}
 			}
 		}
-		//GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Blue, FString::SanitizeFloat(mult));
-		return PlayerVisibility(mult / 6 * (2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000) / FMath::Pow((GetActorLocation() - location).Size(), 2), g);
 	}
-	return PlayerVisibility(0, 0);
-	//return PlayerVisibility(mult/6 * (2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000) / FMath::Pow((GetActorLocation() - location).Size(), 2), g);
+	return PlayerVisibility(mult / 6 * (2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000) / FMath::Pow((GetActorLocation() - location).Size(), 2), g);
 }
 PlayerVisibility APlayerPawn::DStealth(FVector direction, float intensity, float length) {
 	float g = 0;
@@ -720,27 +694,18 @@ PlayerVisibility APlayerPawn::DStealth(FVector direction, float intensity, float
 		FHitResult OutHit;
 		FCollisionQueryParams params;
 		params.AddIgnoredActor(this);
-		for (int i = -1; i <= 1; ++i) {
-			for (int j = -1; j <= 1; ++j) {
-				if ((i == 0) == (j == 0)) continue;
-				Start = GetActorLocation() + i * Capsule->GetScaledCapsuleRadius() * GetActorRightVector() + j * Capsule->GetScaledCapsuleHalfHeight() * GetActorUpVector();
+		for (int x = -1; x <= 1; ++x) {
+			for (int y = -1; y <= 1; ++y) {
+				for(int z = -1; z <= 1; ++z){
+				if (FMath::Abs(i) + FMath::Abs(j) + FMath::Abs(k) != 1) continue;
+				Start = GetActorLocation() + x * Capsule->GetScaledCapsuleRadius() * GetactorForwardVector()
+				 + y * Capsule->GetScaledCapsuleRadius() * GetActorForwardVector()
+				 + z * Capsule->GetScaledCapsuleHalfHeight() * GetActorUpVector();
 				End = Start - direction * length;
 				GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECC_Visibility, params);
 				if (!OutHit.bBlockingHit) {
 					++mult;
-					if (j == -1) {
-						g = FMath::Square(intensity);
-					}
-				}
-				
-				if (j != 0) continue;
-
-				Start = GetActorLocation() + i * Capsule->GetScaledCapsuleRadius() * GetActorForwardVector() + j * Capsule->GetScaledCapsuleHalfHeight() * GetActorUpVector();
-				End = Start - direction * length;
-				GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECC_Visibility, params);
-				if (!OutHit.bBlockingHit) {
-					++mult;
-					if (j == -1) {
+					if (z == -1) {
 						g = FMath::Square(intensity);
 					}
 				}
